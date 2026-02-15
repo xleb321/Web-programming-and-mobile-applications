@@ -1,0 +1,4 @@
+cd "Web programming and mobile applications"
+cd "new-year-counter"
+docker build -t new-year-counter .
+docker run -d -p 3000:3000 --name new-year-app new-year-counter
