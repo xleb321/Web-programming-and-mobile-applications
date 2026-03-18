@@ -1,0 +1,21 @@
+FROM golang:1.21-alpine
+
+WORKDIR /app
+
+# Копируем все файлы
+COPY . .
+
+# Показываем содержимое директории
+RUN echo "=== Contents of /app ===" && ls -la
+
+# Показываем содержимое go.mod если есть
+RUN if [ -f go.mod ]; then \
+        echo "=== Contents of go.mod ===" && cat go.mod; \
+    else \
+        echo "go.mod not found!"; \
+    fi
+
+# Пробуем скачать зависимости
+RUN go mod download || echo "go mod download failed"
+
+CMD ["go", "version"]
