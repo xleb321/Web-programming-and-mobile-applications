@@ -6,18 +6,18 @@ services:
     container_name: rugramm_db
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
-      POSTGRES_DB: ${DB_NAME:-rugramm}
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: RuGramm
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - app_network
+      - rugramm_network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
-      interval: 10s
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
       timeout: 5s
       retries: 5
 
@@ -27,24 +27,19 @@ services:
       dockerfile: Dockerfile
     container_name: rugramm_app
     restart: unless-stopped
-    environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USER: ${DB_USER:-postgres}
-      DB_PASSWORD: ${DB_PASSWORD:-postgres}
-      DB_NAME: ${DB_NAME:-rugramm}
-      PORT: ${PORT:-8080}
+    env_file:
+      - .env.docker
     ports:
-      - "${PORT:-8080}:8080"
+      - "8080:8080"
     depends_on:
       postgres:
         condition: service_healthy
     networks:
-      - app_network
+      - rugramm_network
 
 volumes:
   postgres_data:
 
 networks:
-  app_network:
+  rugramm_network:
     driver: bridge

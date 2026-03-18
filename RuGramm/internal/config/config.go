@@ -18,7 +18,7 @@ type Config struct {
 }
 
 func LoadConfig() (*Config, error) {
-	// Загружаем .env файл
+	// Загружаем .env файл если он существует
 	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found, using environment variables")
 	}
@@ -43,7 +43,6 @@ func getEnv(key, defaultValue string) string {
 }
 
 func (c *Config) GetDBConnectionString() string {
-	// Для подключения из Windows к Docker контейнеру
 	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 		c.DBHost, c.DBPort, c.DBUser, c.DBPassword, c.DBName)
 }

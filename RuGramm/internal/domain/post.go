@@ -19,6 +19,8 @@ type Post struct {
 }
 
 func (p *Post) BeforeCreate(tx *gorm.DB) error {
-	p.ID = uuid.New().String()
+	if p.ID == "" {
+		p.ID = uuid.New().String()
+	}
 	return nil
 }

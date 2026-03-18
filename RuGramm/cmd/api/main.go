@@ -2,6 +2,7 @@ package main
 
 import (
 	"RuGramm/internal/config"
+	"RuGramm/internal/domain"
 	"RuGramm/internal/handler"
 	"RuGramm/internal/repository"
 	"RuGramm/internal/service"
@@ -19,11 +20,22 @@ func main() {
 		log.Fatal("Failed to load config:", err)
 	}
 
+	log.Printf("Connecting to database: %s:%s", cfg.DBHost, cfg.DBPort)
+
 	// Подключение к базе данных
 	db, err := gorm.Open(postgres.Open(cfg.GetDBConnectionString()), &gorm.Config{})
 	if err != nil {
 		log.Fatal("Failed to connect to database:", err)
 	}
+
+	log.Println("Connected to database successfully")
+
+	// Автоматическая миграция
+	if err := db.AutoMigrate(&domain.Post{}); err != nil {
+		log.Fatal("Failed to migrate database:", err)
+	}
+
+	log.Println("Database migrated successfully")
 
 	// Инициализация репозитория, сервиса и хендлера
 	postRepo := repository.NewPostRepository(db)

@@ -1,37 +1,30 @@
-FROM golang:1.21-alpine AS builder
+# Используем официальный образ Go
+FROM golang:1.21-alpine
 
+# Устанавливаем необходимые системные пакеты
+RUN apk add --no-cache git ca-certificates tzdata
+
+# Создаем рабочую директорию
 WORKDIR /app
 
 # Копируем файлы с зависимостями
 COPY go.mod go.sum ./
 
-# Настраиваем GOPROXY для лучшей загрузки
+# Настраиваем GOPROXY (важно для загрузки)
+RUN go env -w GO111MODULE=on
 RUN go env -w GOPROXY=https://proxy.golang.org,direct
 
-# Проверяем наличие файлов и загружаем зависимости
-RUN ls -la && \
-    if [ -f go.mod ]; then \
-        go mod download; \
-    else \
-        echo "go.mod not found!" && exit 1; \
-    fi
+# Загружаем зависимости (с дополнительной диагностикой)
+RUN go mod download || (echo "Failed to download deps" && cat go.mod && exit 1)
 
-# Копируем остальной код
+# Копируем весь код
 COPY . .
 
 # Собираем приложение
-RUN CGO_ENABLED=0 GOOS=linux go build -o main ./cmd/api
+RUN CGO_ENABLED=0 GOOS=linux go build -o /app/main ./cmd/api
 
-FROM alpine:latest
-
-RUN apk --no-cache add ca-certificates
-
-WORKDIR /root/
-
-COPY --from=builder /app/main .
-COPY --from=builder /app/.env* ./
-COPY --from=builder /app/migrations ./migrations
-
+# Открываем порт
 EXPOSE 8080
 
-CMD ["./main"]
+# Запускаем приложение
+CMD ["/app/main"]
