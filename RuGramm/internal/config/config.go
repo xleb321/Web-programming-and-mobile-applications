@@ -1,48 +1,52 @@
 package config
 
 import (
-	"fmt"
 	"log"
 	"os"
+	"strconv"
 
 	"github.com/joho/godotenv"
 )
 
 type Config struct {
-	DBHost     string
-	DBPort     string
-	DBUser     string
-	DBPassword string
-	DBName     string
-	ServerPort string
+    DBHost     string
+    DBPort     string
+    DBUser     string
+    DBPassword string
+    DBName     string
+    AppPort    string
+    AppEnv     string
+    DefaultPage int
+    DefaultLimit int
+    MaxLimit    int
 }
 
-func LoadConfig() (*Config, error) {
-	// Загружаем .env файл если он существует
-	if err := godotenv.Load(); err != nil {
-		log.Println("No .env file found, using environment variables")
-	}
+func LoadConfig() *Config {
+    if err := godotenv.Load(); err != nil {
+        log.Println("No .env file found, using environment variables")
+    }
 
-	config := &Config{
-		DBHost:     getEnv("DB_HOST", "localhost"),
-		DBPort:     getEnv("DB_PORT", "5432"),
-		DBUser:     getEnv("DB_USER", "postgres"),
-		DBPassword: getEnv("DB_PASSWORD", "postgres"),
-		DBName:     getEnv("DB_NAME", "RuGramm"),
-		ServerPort: getEnv("PORT", "8080"),
-	}
+    defaultPage, _ := strconv.Atoi(getEnv("DEFAULT_PAGE", "1"))
+    defaultLimit, _ := strconv.Atoi(getEnv("DEFAULT_LIMIT", "10"))
+    maxLimit, _ := strconv.Atoi(getEnv("MAX_LIMIT", "100"))
 
-	return config, nil
+    return &Config{
+        DBHost:      getEnv("DB_HOST", "localhost"),
+        DBPort:      getEnv("DB_PORT", "5432"),
+        DBUser:      getEnv("DB_USER", "rugram_user"),
+        DBPassword:  getEnv("DB_PASSWORD", "rugram_password"),
+        DBName:      getEnv("DB_NAME", "rugram_db"),
+        AppPort:     getEnv("APP_PORT", "4200"),
+        AppEnv:      getEnv("APP_ENV", "development"),
+        DefaultPage: defaultPage,
+        DefaultLimit: defaultLimit,
+        MaxLimit:    maxLimit,
+    }
 }
 
 func getEnv(key, defaultValue string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-	return defaultValue
-}
-
-func (c *Config) GetDBConnectionString() string {
-	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		c.DBHost, c.DBPort, c.DBUser, c.DBPassword, c.DBName)
+    if value := os.Getenv(key); value != "" {
+        return value
+    }
+    return defaultValue
 }

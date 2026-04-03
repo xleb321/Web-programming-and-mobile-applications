@@ -1,0 +1,5 @@
+docker exec -it rugram_db psql -U rugram_user -d postgres -c "CREATE DATABASE IF NOT EXISTS rugram_user;"
+
+docker-compose restart app
+
+docker-compose logs -f app

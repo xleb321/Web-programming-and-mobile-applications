@@ -1,57 +1,49 @@
 package dto
 
-import "github.com/go-playground/validator/v10"
+import (
+	"time"
+)
 
 type CreatePostRequest struct {
-	Title       string `json:"title" validate:"required,min=3,max=100"`
-	ImageURL    string `json:"image_url" validate:"required,url"`
-	Description string `json:"description" validate:"max=500"`
+    UserID      string `json:"user_id" binding:"required"`
+    Title       string `json:"title" binding:"required,min=1,max=200"`
+    Description string `json:"description" binding:"max=1000"`
+    ImageURL    string `json:"image_url" binding:"url"`
+    Status      string `json:"status" binding:"oneof=active draft archived"`
 }
 
 type UpdatePostRequest struct {
-	Title       *string `json:"title" validate:"omitempty,min=3,max=100"`
-	ImageURL    *string `json:"image_url" validate:"omitempty,url"`
-	Description *string `json:"description" validate:"omitempty,max=500"`
+    Title       *string `json:"title" binding:"omitempty,min=1,max=200"`
+    Description *string `json:"description" binding:"omitempty,max=1000"`
+    ImageURL    *string `json:"image_url" binding:"omitempty,url"`
+    Status      *string `json:"status" binding:"omitempty,oneof=active draft archived"`
 }
 
-type PaginationQuery struct {
-	Page  int `form:"page" binding:"omitempty,min=1"`
-	Limit int `form:"limit" binding:"omitempty,min=1,max=100"`
+type PostResponse struct {
+    ID          string    `json:"id"`
+    UserID      string    `json:"user_id"`
+    Title       string    `json:"title"`
+    Description string    `json:"description"`
+    ImageURL    string    `json:"image_url"`
+    Status      string    `json:"status"`
+    LikesCount  int       `json:"likes_count"`
+    CreatedAt   time.Time `json:"created_at"`
+    UpdatedAt   time.Time `json:"updated_at"`
 }
 
-func (q *PaginationQuery) SetDefaults() {
-	if q.Page == 0 {
-		q.Page = 1
-	}
-	if q.Limit == 0 {
-		q.Limit = 10
-	}
+type PaginationRequest struct {
+    Page  int `form:"page" binding:"omitempty,min=1"`
+    Limit int `form:"limit" binding:"omitempty,min=1,max=100"`
 }
 
-func (q *PaginationQuery) GetOffset() int {
-	return (q.Page - 1) * q.Limit
+type PaginationResponse struct {
+    Data       interface{} `json:"data"`
+    Meta       MetaData    `json:"meta"`
 }
 
-type PaginatedResponse struct {
-	Data interface{} `json:"data"`
-	Meta Meta        `json:"meta"`
-}
-
-type Meta struct {
-	Total       int64 `json:"total"`
-	Page        int   `json:"page"`
-	Limit       int   `json:"limit"`
-	TotalPages  int   `json:"total_pages"`
-	HasNext     bool  `json:"has_next"`
-	HasPrevious bool  `json:"has_previous"`
-}
-
-func (v *CreatePostRequest) Validate() error {
-	validate := validator.New()
-	return validate.Struct(v)
-}
-
-func (v *UpdatePostRequest) Validate() error {
-	validate := validator.New()
-	return validate.Struct(v)
+type MetaData struct {
+    Total       int64 `json:"total"`
+    Page        int   `json:"page"`
+    Limit       int   `json:"limit"`
+    TotalPages  int64 `json:"total_pages"`
 }

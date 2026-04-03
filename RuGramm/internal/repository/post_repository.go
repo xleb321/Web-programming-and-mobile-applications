@@ -1,63 +1,215 @@
 package repository
 
 import (
-	"RuGramm/internal/domain"
-	"RuGramm/internal/dto"
+	"database/sql"
+	"time"
 
-	"gorm.io/gorm"
+	"rugram-api/internal/models"
+
+	"github.com/google/uuid"
 )
 
-type PostRepository interface {
-	Create(post *domain.Post) error
-	GetByID(id string) (*domain.Post, error)
-	GetAll(query *dto.PaginationQuery) ([]domain.Post, int64, error)
-	Update(post *domain.Post) error
-	Delete(id string) error
+type PostRepository struct {
+    db *sql.DB
 }
 
-type postRepository struct {
-	db *gorm.DB
+func NewPostRepository(db *sql.DB) *PostRepository {
+    return &PostRepository{db: db}
 }
 
-func NewPostRepository(db *gorm.DB) PostRepository {
-	return &postRepository{db: db}
+func (r *PostRepository) Create(post *models.Post) error {
+    query := `
+        INSERT INTO posts (id, user_id, title, description, image_url, status, likes_count, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        RETURNING id, created_at, updated_at
+    `
+    
+    now := time.Now()
+    post.ID = uuid.New()
+    post.CreatedAt = now
+    post.UpdatedAt = now
+    
+    err := r.db.QueryRow(
+        query,
+        post.ID,
+        post.UserID,
+        post.Title,
+        post.Description,
+        post.ImageURL,
+        post.Status,
+        post.LikesCount,
+        post.CreatedAt,
+        post.UpdatedAt,
+    ).Scan(&post.ID, &post.CreatedAt, &post.UpdatedAt)
+    
+    return err
 }
 
-func (r *postRepository) Create(post *domain.Post) error {
-	return r.db.Create(post).Error
+func (r *PostRepository) FindByID(id uuid.UUID) (*models.Post, error) {
+    query := `
+        SELECT id, user_id, title, description, image_url, status, likes_count, created_at, updated_at, deleted_at
+        FROM posts
+        WHERE id = $1 AND deleted_at IS NULL
+    `
+    
+    post := &models.Post{}
+    err := r.db.QueryRow(query, id).Scan(
+        &post.ID,
+        &post.UserID,
+        &post.Title,
+        &post.Description,
+        &post.ImageURL,
+        &post.Status,
+        &post.LikesCount,
+        &post.CreatedAt,
+        &post.UpdatedAt,
+        &post.DeletedAt,
+    )
+    
+    if err == sql.ErrNoRows {
+        return nil, nil
+    }
+    return post, err
 }
 
-func (r *postRepository) GetByID(id string) (*domain.Post, error) {
-	var post domain.Post
-	err := r.db.Where("id = ?", id).First(&post).Error
-	if err != nil {
-		return nil, err
-	}
-	return &post, nil
+func (r *PostRepository) Update(post *models.Post) error {
+    query := `
+        UPDATE posts
+        SET title = $2, description = $3, image_url = $4, status = $5, updated_at = $6
+        WHERE id = $1 AND deleted_at IS NULL
+        RETURNING updated_at
+    `
+    
+    post.UpdatedAt = time.Now()
+    err := r.db.QueryRow(
+        query,
+        post.ID,
+        post.Title,
+        post.Description,
+        post.ImageURL,
+        post.Status,
+        post.UpdatedAt,
+    ).Scan(&post.UpdatedAt)
+    
+    return err
 }
 
-func (r *postRepository) GetAll(query *dto.PaginationQuery) ([]domain.Post, int64, error) {
-	var posts []domain.Post
-	var total int64
-
-	// Get total count
-	if err := r.db.Model(&domain.Post{}).Count(&total).Error; err != nil {
-		return nil, 0, err
-	}
-
-	// Get paginated results
-	err := r.db.Offset(query.GetOffset()).
-		Limit(query.Limit).
-		Order("created_at DESC").
-		Find(&posts).Error
-
-	return posts, total, err
+func (r *PostRepository) SoftDelete(id uuid.UUID) error {
+    query := `
+        UPDATE posts
+        SET deleted_at = $2
+        WHERE id = $1 AND deleted_at IS NULL
+    `
+    
+    result, err := r.db.Exec(query, id, time.Now())
+    if err != nil {
+        return err
+    }
+    
+    rowsAffected, err := result.RowsAffected()
+    if err != nil {
+        return err
+    }
+    
+    if rowsAffected == 0 {
+        return sql.ErrNoRows
+    }
+    
+    return nil
 }
 
-func (r *postRepository) Update(post *domain.Post) error {
-	return r.db.Save(post).Error
+func (r *PostRepository) FindAll(limit, offset int) ([]models.Post, int64, error) {
+    countQuery := `SELECT COUNT(*) FROM posts WHERE deleted_at IS NULL`
+    var total int64
+    err := r.db.QueryRow(countQuery).Scan(&total)
+    if err != nil {
+        return nil, 0, err
+    }
+    
+    query := `
+        SELECT id, user_id, title, description, image_url, status, likes_count, created_at, updated_at, deleted_at
+        FROM posts
+        WHERE deleted_at IS NULL
+        ORDER BY created_at DESC
+        LIMIT $1 OFFSET $2
+    `
+    
+    rows, err := r.db.Query(query, limit, offset)
+    if err != nil {
+        return nil, 0, err
+    }
+    defer rows.Close()
+    
+    posts := []models.Post{}
+    for rows.Next() {
+        var post models.Post
+        err := rows.Scan(
+            &post.ID,
+            &post.UserID,
+            &post.Title,
+            &post.Description,
+            &post.ImageURL,
+            &post.Status,
+            &post.LikesCount,
+            &post.CreatedAt,
+            &post.UpdatedAt,
+            &post.DeletedAt,
+        )
+        if err != nil {
+            return nil, 0, err
+        }
+        posts = append(posts, post)
+    }
+    
+    return posts, total, nil
 }
 
-func (r *postRepository) Delete(id string) error {
-	return r.db.Delete(&domain.Post{}, "id = ?", id).Error
+func (r *PostRepository) FindByUserID(userID string, limit, offset int) ([]models.Post, int64, error) {
+    countQuery := `
+        SELECT COUNT(*) 
+        FROM posts 
+        WHERE user_id = $1 AND deleted_at IS NULL
+    `
+    var total int64
+    err := r.db.QueryRow(countQuery, userID).Scan(&total)
+    if err != nil {
+        return nil, 0, err
+    }
+    
+    query := `
+        SELECT id, user_id, title, description, image_url, status, likes_count, created_at, updated_at, deleted_at
+        FROM posts
+        WHERE user_id = $1 AND deleted_at IS NULL
+        ORDER BY created_at DESC
+        LIMIT $2 OFFSET $3
+    `
+    
+    rows, err := r.db.Query(query, userID, limit, offset)
+    if err != nil {
+        return nil, 0, err
+    }
+    defer rows.Close()
+    
+    posts := []models.Post{}
+    for rows.Next() {
+        var post models.Post
+        err := rows.Scan(
+            &post.ID,
+            &post.UserID,
+            &post.Title,
+            &post.Description,
+            &post.ImageURL,
+            &post.Status,
+            &post.LikesCount,
+            &post.CreatedAt,
+            &post.UpdatedAt,
+            &post.DeletedAt,
+        )
+        if err != nil {
+            return nil, 0, err
+        }
+        posts = append(posts, post)
+    }
+    
+    return posts, total, nil
 }

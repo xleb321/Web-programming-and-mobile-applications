@@ -1,0 +1,485 @@
+openapi: 3.0.0
+info:
+  title: RuGram API
+  description: RuGram
+  version: 1.0.0
+  contact:
+    name: Gleb, Pavel
+    email: support@rugram.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:4200
+    description: Development server
+  - url: https://api.rugram.com
+    description: Production server
+
+tags:
+  - name: Health
+    description: Проверка API
+  - name: Posts
+    description: Управление постами
+
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Проверка API
+      description: Возвращает статус работы API
+      operationId: checkHealth
+      responses:
+        '200':
+          description: API работает нормально
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  service:
+                    type: string
+                    example: rugram-api
+
+  /api/v1/posts:
+    get:
+      tags:
+        - Posts
+      summary: Получить список постов
+      description: Возвращает список всех активных постов с пагинацией
+      operationId: getAllPosts
+      parameters:
+        - name: page
+          in: query
+          description: Номер страницы
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          example: 1
+        - name: limit
+          in: query
+          description: Количество элементов на странице
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+          example: 10
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPostResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      tags:
+        - Posts
+      summary: Создать новый пост
+      description: Создает новый пост
+      operationId: createPost
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePostRequest'
+      responses:
+        '201':
+          description: Пост успешно создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostResponse'
+        '400':
+          description: Ошибка валидации данных
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/posts/{id}:
+    get:
+      tags:
+        - Posts
+      summary: Получить пост по ID
+      description: Возвращает информацию о посте с ID
+      operationId: getPostById
+      parameters:
+        - name: id
+          in: path
+          description: UUID поста
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440000
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostResponse'
+        '404':
+          description: Пост не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - Posts
+      summary: Обновить пост
+      description: Обновляет все данные поста
+      operationId: updatePostFull
+      parameters:
+        - name: id
+          in: path
+          description: UUID поста
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePostRequest'
+      responses:
+        '200':
+          description: Пост успешно обновлен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostResponse'
+        '404':
+          description: Пост не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: Ошибка валидации данных
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    patch:
+      tags:
+        - Posts
+      summary: Изменение пост
+      description: Обновляет переданные поля поста
+      operationId: updatePostPartial
+      parameters:
+        - name: id
+          in: path
+          description: UUID поста
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePostRequest'
+      responses:
+        '200':
+          description: Пост успешно обновлен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostResponse'
+        '404':
+          description: Пост не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - Posts
+      summary: Удалить пост
+      description: Помечает пост как удаленный
+      operationId: deletePost
+      parameters:
+        - name: id
+          in: path
+          description: UUID поста
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Пост успешно удален
+        '404':
+          description: Пост не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/posts/user/{userId}:
+    get:
+      tags:
+        - Posts
+      summary: Получить посты пользователя
+      description: Возвращает все посты пользователя
+      operationId: getUserPosts
+      parameters:
+        - name: userId
+          in: path
+          description: ID пользователя
+          required: true
+          schema:
+            type: string
+          example: user123
+        - name: page
+          in: query
+          description: Номер страницы
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: Количество элементов на странице
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPostResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    CreatePostRequest:
+      type: object
+      required:
+        - user_id
+        - title
+      properties:
+        user_id:
+          type: string
+          description: ID пользователя
+          example: user123
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Заголовок поста
+          example: Мой первый пост в RuGram
+        description:
+          type: string
+          maxLength: 1000
+          description: Описание поста
+          example: Привет, мир! Это мой первый пост.
+        image_url:
+          type: string
+          format: url
+          description: URL изображения
+          example: https://m.youtube.com/watch?v=dQw4w9WgXcQ
+        status:
+          type: string
+          enum: [active, draft, archived]
+          default: active
+          description: Статус поста
+          example: active
+
+    UpdatePostRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Заголовок поста
+          example: Обновленный заголовок
+        description:
+          type: string
+          maxLength: 1000
+          description: Описание поста
+          example: Обновленное описание
+        image_url:
+          type: string
+          format: url
+          description: URL изображения
+          example: https://m.youtube.com/watch?v=dQw4w9WgXcQ
+        status:
+          type: string
+          enum: [active, draft, archived]
+          description: Статус поста
+          example: draft
+
+    PostResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+              description: UUID поста
+              example: 550e8400-e29b-41d4-a716-446655440000
+            user_id:
+              type: string
+              description: ID пользователя
+              example: user123
+            title:
+              type: string
+              description: Заголовок поста
+              example: Мой первый пост
+            description:
+              type: string
+              description: Описание поста
+              example: Привет, мир!
+            image_url:
+              type: string
+              format: url
+              description: URL изображения
+              example: https://m.youtube.com/watch?v=dQw4w9WgXcQ
+            status:
+              type: string
+              enum: [active, draft, archived]
+              description: Статус поста
+              example: active
+            likes_count:
+              type: integer
+              description: Количество лайков
+              example: 5
+            created_at:
+              type: string
+              format: date-time
+              description: Дата создания
+              example: 2026-03-28T10:00:00Z
+            updated_at:
+              type: string
+              format: date-time
+              description: Дата обновления
+              example: 2026-03-28T10:05:00Z
+
+    PaginatedPostResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/PostResponseData'
+            meta:
+              type: object
+              properties:
+                total:
+                  type: integer
+                  description: Общее количество постов
+                  example: 25
+                page:
+                  type: integer
+                  description: Текущая страница
+                  example: 1
+                limit:
+                  type: integer
+                  description: Элементов на странице
+                  example: 10
+                total_pages:
+                  type: integer
+                  description: Всего страниц
+                  example: 3
+
+    PostResponseData:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        image_url:
+          type: string
+        status:
+          type: string
+        likes_count:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          description: Сообщение об ошибке
+          example: Post not found
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

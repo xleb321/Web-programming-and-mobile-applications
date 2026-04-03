@@ -1,0 +1,256 @@
+{
+	"info": {
+		"name": "RuGram API",
+		"description": "RuGram",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"version": "1.0.0"
+	},
+	"item": [
+		{
+			"name": "Health Check",
+			"item": [
+				{
+					"name": "Check API Health",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/health",
+							"host": ["{{base_url}}"],
+							"path": ["health"]
+						},
+						"description": "Проверка API"
+					},
+					"response": [
+						{
+							"name": "Success Response",
+							"body": "{\n  \"status\": \"ok\",\n  \"service\": \"rugram-api\"\n}",
+							"code": 200
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Posts",
+			"item": [
+				{
+					"name": "Create Post",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"user_id\": \"user123\",\n  \"title\": \"Мой первый пост в RuGram\",\n  \"description\": \"Привет, мир! Это мой первый пост в новой социальной сети.\",\n  \"image_url\": \"https://images.unsplash.com/photo-1516245834210-c4c142785335\",\n  \"status\": \"active\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/posts",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "posts"]
+						},
+						"description": "Создание нового поста"
+					},
+					"response": [
+						{
+							"name": "Success Response",
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"user_id\": \"user123\",\n    \"title\": \"Мой первый пост в RuGram\",\n    \"description\": \"Привет, мир! Это мой первый пост в новой социальной сети.\",\n    \"image_url\": \"https://images.unsplash.com/photo-1516245834210-c4c142785335\",\n    \"status\": \"active\",\n    \"likes_count\": 0,\n    \"created_at\": \"2026-03-28T10:00:00Z\",\n    \"updated_at\": \"2026-03-28T10:00:00Z\"\n  }\n}",
+							"code": 201
+						},
+						{
+							"name": "Validation Error",
+							"body": "{\n  \"success\": false,\n  \"error\": \"Invalid request data: title is required\"\n}",
+							"code": 400
+						}
+					]
+				},
+				{
+					"name": "Get All Posts",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/posts?page=1&limit=10",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "posts"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1",
+									"description": "Номер страницы (по умолчанию: 1)"
+								},
+								{
+									"key": "limit",
+									"value": "10",
+									"description": "Количество элементов на странице (по умолчанию: 10, макс: 100)"
+								}
+							]
+						},
+						"description": "Получение списка всех активных постов с пагинацией"
+					},
+					"response": [
+						{
+							"name": "Success Response",
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"data\": [\n      {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"user_id\": \"user123\",\n        \"title\": \"Мой первый пост\",\n        \"description\": \"Привет, мир!\",\n        \"image_url\": \"https://example.com/photo.jpg\",\n        \"status\": \"active\",\n        \"likes_count\": 5,\n        \"created_at\": \"2026-03-28T10:00:00Z\",\n        \"updated_at\": \"2026-03-28T10:00:00Z\"\n      }\n    ],\n    \"meta\": {\n      \"total\": 25,\n      \"page\": 1,\n      \"limit\": 10,\n      \"total_pages\": 3\n    }\n  }\n}",
+							"code": 200
+						}
+					]
+				},
+				{
+					"name": "Get Post by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/posts/{{post_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "posts", "{{post_id}}"]
+						},
+						"description": "Получение поста по ID"
+					},
+					"response": [
+						{
+							"name": "Success Response",
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"user_id\": \"user123\",\n    \"title\": \"Мой первый пост\",\n    \"description\": \"Привет, мир!\",\n    \"image_url\": \"https://example.com/photo.jpg\",\n    \"status\": \"active\",\n    \"likes_count\": 5,\n    \"created_at\": \"2026-03-28T10:00:00Z\",\n    \"updated_at\": \"2026-03-28T10:00:00Z\"\n  }\n}",
+							"code": 200
+						},
+						{
+							"name": "Not Found",
+							"body": "{\n  \"success\": false,\n  \"error\": \"Post not found\"\n}",
+							"code": 404
+						}
+					]
+				},
+				{
+					"name": "Update Post",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Обновленный заголовок поста\",\n  \"description\": \"Полностью обновленное описание\",\n  \"image_url\": \"https://example.com/new-photo.jpg\",\n  \"status\": \"active\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/posts/{{post_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "posts", "{{post_id}}"]
+						},
+						"description": "Обновление поста"
+					},
+					"response": [
+						{
+							"name": "Success Response",
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"user_id\": \"user123\",\n    \"title\": \"Обновленный заголовок поста\",\n    \"description\": \"Полностью обновленное описание\",\n    \"image_url\": \"https://example.com/new-photo.jpg\",\n    \"status\": \"active\",\n    \"likes_count\": 5,\n    \"created_at\": \"2026-03-28T10:00:00Z\",\n    \"updated_at\": \"2026-03-28T10:05:00Z\"\n  }\n}",
+							"code": 200
+						}
+					]
+				},
+				{
+					"name": "Reduce Post",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Новый заголовок\",\n  \"status\": \"draft\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/posts/{{post_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "posts", "{{post_id}}"]
+						},
+						"description": "Изменение поста"
+					},
+					"response": [
+						{
+							"name": "Success Response",
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"user_id\": \"user123\",\n    \"title\": \"Новый заголовок\",\n    \"description\": \"Полностью обновленное описание\",\n    \"image_url\": \"https://example.com/new-photo.jpg\",\n    \"status\": \"draft\",\n    \"likes_count\": 5,\n    \"created_at\": \"2026-03-28T10:00:00Z\",\n    \"updated_at\": \"2026-03-28T10:05:00Z\"\n  }\n}",
+							"code": 200
+						}
+					]
+				},
+				{
+					"name": "Delete Post",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/posts/{{post_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "posts", "{{post_id}}"]
+						},
+						"description": "Мягкое удаление поста"
+					},
+					"response": [
+						{
+							"name": "Success Response",
+							"body": "",
+							"code": 204
+						}
+					]
+				},
+				{
+					"name": "Get User Posts",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/posts/user/{{user_id}}?page=1&limit=10",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "posts", "user", "{{user_id}}"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Получение всех постов пользователя"
+					},
+					"response": [
+						{
+							"name": "Success Response",
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"data\": [\n      {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"user_id\": \"user123\",\n        \"title\": \"Пост пользователя\",\n        \"description\": \"Описание\",\n        \"image_url\": \"https://example.com/photo.jpg\",\n        \"status\": \"active\",\n        \"likes_count\": 3,\n        \"created_at\": \"2026-03-28T10:00:00Z\",\n        \"updated_at\": \"2026-03-28T10:00:00Z\"\n      }\n    ],\n    \"meta\": {\n      \"total\": 5,\n      \"page\": 1,\n      \"limit\": 10,\n      \"total_pages\": 1\n    }\n  }\n}",
+							"code": 200
+						}
+					]
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:4200",
+			"type": "string"
+		},
+		{
+			"key": "post_id",
+			"value": "550e8400-e29b-41d4-a716-446655440000",
+			"type": "string"
+		},
+		{
+			"key": "user_id",
+			"value": "user123",
+			"type": "string"
+		}
+	]
+}

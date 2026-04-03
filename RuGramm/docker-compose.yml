@@ -2,44 +2,50 @@ version: '3.8'
 
 services:
   postgres:
-    image: postgres:16-alpine
-    container_name: rugramm_db
+    image: postgres:16
+    container_name: rugram_db
     restart: unless-stopped
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: RuGramm
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - rugram_postgres_data:/var/lib/postgresql/data
     networks:
-      - rugramm_network
+      - rugram_network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
+      test: ['CMD-SHELL', 'pg_isready -U ${DB_USER}']
+      interval: 10s
       timeout: 5s
       retries: 5
 
   app:
-    build: 
-      context: .
-      dockerfile: Dockerfile
-    container_name: rugramm_app
+    build: .
+    container_name: rugram_api
     restart: unless-stopped
-    env_file:
-      - .env.docker
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      APP_PORT: ${APP_PORT}
+      APP_ENV: ${APP_ENV}
     ports:
-      - "8080:8080"
+      - '${APP_PORT}:${APP_PORT}'
     depends_on:
       postgres:
         condition: service_healthy
     networks:
-      - rugramm_network
+      - rugram_network
+    volumes:
+      - ./internal/database/migrations:/root/internal/database/migrations
 
 volumes:
-  postgres_data:
+  rugram_postgres_data:
 
 networks:
-  rugramm_network:
+  rugram_network:
     driver: bridge
