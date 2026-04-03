@@ -1,5 +1,5 @@
 # Используем официальный образ Go
-FROM golang:1.21-alpine
+FROM golang:1.25-alpine
 
 # Устанавливаем необходимые системные пакеты
 RUN apk add --no-cache git ca-certificates tzdata
