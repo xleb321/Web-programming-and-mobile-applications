@@ -2,14 +2,23 @@ package main
 
 import (
 	"encoding/json"
+<<<<<<< Updated upstream
+=======
+	"fmt"
+>>>>>>> Stashed changes
 	"log"
 	"net/http"
 	"time"
 )
 
+<<<<<<< Updated upstream
 type Response struct {
 	DaysUntilNewYear int    `json:"days_until_new_year"`
 	Message          string `json:"message"`
+=======
+type newYearResponse struct {
+	Days int `json:"days"`
+>>>>>>> Stashed changes
 }
 
 func daysUntilNewYear() int {
@@ -28,12 +37,23 @@ func newYearHandler(w http.ResponseWriter, r *http.Request) {
 
 	days := daysUntilNewYear()
 
+<<<<<<< Updated upstream
 	response := Response{
 		DaysUntilNewYear: days,
 		Message:          "До нового года осталось дней",
 	}
 
 	json.NewEncoder(w).Encode(response)
+=======
+	response := newYearResponse {
+		Days: days,
+	}
+
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, "Ошибка при форматирование ответа", http.StatusInternalServerError)
+		return
+	}
+>>>>>>> Stashed changes
 }
 
 func main() {
