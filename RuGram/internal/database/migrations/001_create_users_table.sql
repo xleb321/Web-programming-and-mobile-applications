@@ -12,5 +12,8 @@ CREATE TABLE IF NOT EXISTS users (
     deleted_at TIMESTAMP WITH TIME ZONE
 );
 
-CREATE INDEX idx_users_email ON users(email);
-CREATE INDEX idx_users_deleted_at ON users(deleted_at);
+-- Create indexes with IF NOT EXISTS
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_deleted_at ON users(deleted_at);
+CREATE INDEX IF NOT EXISTS idx_users_yandex_id ON users(yandex_id);
+CREATE INDEX IF NOT EXISTS idx_users_vk_id ON users(vk_id);

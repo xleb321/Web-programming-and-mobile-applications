@@ -1,9 +1,9 @@
 {
 	"info": {
-		"name": "RuGram API",
-		"description": "RuGram",
+		"name": "RuGram API - Go Version",
+		"description": "RuGram API with JWT Authentication, OAuth2, and Session Management",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-		"version": "1.0.0"
+		"version": "2.0.0"
 	},
 	"item": [
 		{
@@ -18,16 +18,252 @@
 							"raw": "{{base_url}}/health",
 							"host": ["{{base_url}}"],
 							"path": ["health"]
-						},
-						"description": "Проверка API"
-					},
-					"response": [
-						{
-							"name": "Success Response",
-							"body": "{\n  \"status\": \"ok\",\n  \"service\": \"rugram-api\"\n}",
-							"code": 200
 						}
-					]
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Register User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"SecurePass123\",\n  \"phone\": \"+79991234567\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/register",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "register"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"SecurePass123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/login",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "login"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Whoami (Get Current User)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/whoami",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "whoami"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Refresh Tokens",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/refresh",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "refresh"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/logout",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "logout"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Logout All Sessions",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/logout-all",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "logout-all"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "OAuth",
+			"item": [
+				{
+					"name": "Yandex OAuth - Initiate",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/oauth/yandex",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "oauth", "yandex"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "VK OAuth - Initiate",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/oauth/vk",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "oauth", "vk"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Users",
+			"item": [
+				{
+					"name": "Get User by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/{{user_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "{{user_id}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User by Email",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/email/{{user_email}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "email", "{{user_email}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Users",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users?page=1&limit=10",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update User",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"newemail@example.com\",\n  \"phone\": \"+79998887766\",\n  \"password\": \"NewSecurePass456\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/{{user_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "{{user_id}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Patch User",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phone\": \"+79991112233\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/{{user_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "{{user_id}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete User",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/{{user_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "{{user_id}}"]
+						}
+					},
+					"response": []
 				}
 			]
 		},
@@ -46,27 +282,15 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"user_id\": \"user123\",\n  \"title\": \"Мой первый пост в RuGram\",\n  \"description\": \"Привет, мир! Это мой первый пост в новой социальной сети.\",\n  \"image_url\": \"https://images.unsplash.com/photo-1516245834210-c4c142785335\",\n  \"status\": \"active\"\n}"
+							"raw": "{\n  \"user_id\": \"{{user_id}}\",\n  \"title\": \"Мой первый пост в RuGram\",\n  \"description\": \"Привет, мир! Это мой первый пост в новой социальной сети.\",\n  \"image_url\": \"https://images.unsplash.com/photo-1516245834210-c4c142785335\",\n  \"status\": \"active\"\n}"
 						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/posts",
 							"host": ["{{base_url}}"],
 							"path": ["api", "v1", "posts"]
-						},
-						"description": "Создание нового поста"
-					},
-					"response": [
-						{
-							"name": "Success Response",
-							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"user_id\": \"user123\",\n    \"title\": \"Мой первый пост в RuGram\",\n    \"description\": \"Привет, мир! Это мой первый пост в новой социальной сети.\",\n    \"image_url\": \"https://images.unsplash.com/photo-1516245834210-c4c142785335\",\n    \"status\": \"active\",\n    \"likes_count\": 0,\n    \"created_at\": \"2026-03-28T10:00:00Z\",\n    \"updated_at\": \"2026-03-28T10:00:00Z\"\n  }\n}",
-							"code": 201
-						},
-						{
-							"name": "Validation Error",
-							"body": "{\n  \"success\": false,\n  \"error\": \"Invalid request data: title is required\"\n}",
-							"code": 400
 						}
-					]
+					},
+					"response": []
 				},
 				{
 					"name": "Get All Posts",
@@ -80,25 +304,16 @@
 							"query": [
 								{
 									"key": "page",
-									"value": "1",
-									"description": "Номер страницы (по умолчанию: 1)"
+									"value": "1"
 								},
 								{
 									"key": "limit",
-									"value": "10",
-									"description": "Количество элементов на странице (по умолчанию: 10, макс: 100)"
+									"value": "10"
 								}
 							]
-						},
-						"description": "Получение списка всех активных постов с пагинацией"
-					},
-					"response": [
-						{
-							"name": "Success Response",
-							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"data\": [\n      {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"user_id\": \"user123\",\n        \"title\": \"Мой первый пост\",\n        \"description\": \"Привет, мир!\",\n        \"image_url\": \"https://example.com/photo.jpg\",\n        \"status\": \"active\",\n        \"likes_count\": 5,\n        \"created_at\": \"2026-03-28T10:00:00Z\",\n        \"updated_at\": \"2026-03-28T10:00:00Z\"\n      }\n    ],\n    \"meta\": {\n      \"total\": 25,\n      \"page\": 1,\n      \"limit\": 10,\n      \"total_pages\": 3\n    }\n  }\n}",
-							"code": 200
 						}
-					]
+					},
+					"response": []
 				},
 				{
 					"name": "Get Post by ID",
@@ -109,21 +324,9 @@
 							"raw": "{{base_url}}/api/v1/posts/{{post_id}}",
 							"host": ["{{base_url}}"],
 							"path": ["api", "v1", "posts", "{{post_id}}"]
-						},
-						"description": "Получение поста по ID"
-					},
-					"response": [
-						{
-							"name": "Success Response",
-							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"user_id\": \"user123\",\n    \"title\": \"Мой первый пост\",\n    \"description\": \"Привет, мир!\",\n    \"image_url\": \"https://example.com/photo.jpg\",\n    \"status\": \"active\",\n    \"likes_count\": 5,\n    \"created_at\": \"2026-03-28T10:00:00Z\",\n    \"updated_at\": \"2026-03-28T10:00:00Z\"\n  }\n}",
-							"code": 200
-						},
-						{
-							"name": "Not Found",
-							"body": "{\n  \"success\": false,\n  \"error\": \"Post not found\"\n}",
-							"code": 404
 						}
-					]
+					},
+					"response": []
 				},
 				{
 					"name": "Update Post",
@@ -143,19 +346,12 @@
 							"raw": "{{base_url}}/api/v1/posts/{{post_id}}",
 							"host": ["{{base_url}}"],
 							"path": ["api", "v1", "posts", "{{post_id}}"]
-						},
-						"description": "Обновление поста"
-					},
-					"response": [
-						{
-							"name": "Success Response",
-							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"user_id\": \"user123\",\n    \"title\": \"Обновленный заголовок поста\",\n    \"description\": \"Полностью обновленное описание\",\n    \"image_url\": \"https://example.com/new-photo.jpg\",\n    \"status\": \"active\",\n    \"likes_count\": 5,\n    \"created_at\": \"2026-03-28T10:00:00Z\",\n    \"updated_at\": \"2026-03-28T10:05:00Z\"\n  }\n}",
-							"code": 200
 						}
-					]
+					},
+					"response": []
 				},
 				{
-					"name": "Reduce Post",
+					"name": "Patch Post",
 					"request": {
 						"method": "PATCH",
 						"header": [
@@ -172,16 +368,9 @@
 							"raw": "{{base_url}}/api/v1/posts/{{post_id}}",
 							"host": ["{{base_url}}"],
 							"path": ["api", "v1", "posts", "{{post_id}}"]
-						},
-						"description": "Изменение поста"
-					},
-					"response": [
-						{
-							"name": "Success Response",
-							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"user_id\": \"user123\",\n    \"title\": \"Новый заголовок\",\n    \"description\": \"Полностью обновленное описание\",\n    \"image_url\": \"https://example.com/new-photo.jpg\",\n    \"status\": \"draft\",\n    \"likes_count\": 5,\n    \"created_at\": \"2026-03-28T10:00:00Z\",\n    \"updated_at\": \"2026-03-28T10:05:00Z\"\n  }\n}",
-							"code": 200
 						}
-					]
+					},
+					"response": []
 				},
 				{
 					"name": "Delete Post",
@@ -192,16 +381,9 @@
 							"raw": "{{base_url}}/api/v1/posts/{{post_id}}",
 							"host": ["{{base_url}}"],
 							"path": ["api", "v1", "posts", "{{post_id}}"]
-						},
-						"description": "Мягкое удаление поста"
-					},
-					"response": [
-						{
-							"name": "Success Response",
-							"body": "",
-							"code": 204
 						}
-					]
+					},
+					"response": []
 				},
 				{
 					"name": "Get User Posts",
@@ -222,16 +404,9 @@
 									"value": "10"
 								}
 							]
-						},
-						"description": "Получение всех постов пользователя"
-					},
-					"response": [
-						{
-							"name": "Success Response",
-							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"data\": [\n      {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"user_id\": \"user123\",\n        \"title\": \"Пост пользователя\",\n        \"description\": \"Описание\",\n        \"image_url\": \"https://example.com/photo.jpg\",\n        \"status\": \"active\",\n        \"likes_count\": 3,\n        \"created_at\": \"2026-03-28T10:00:00Z\",\n        \"updated_at\": \"2026-03-28T10:00:00Z\"\n      }\n    ],\n    \"meta\": {\n      \"total\": 5,\n      \"page\": 1,\n      \"limit\": 10,\n      \"total_pages\": 1\n    }\n  }\n}",
-							"code": 200
 						}
-					]
+					},
+					"response": []
 				}
 			]
 		}
@@ -243,14 +418,51 @@
 			"type": "string"
 		},
 		{
-			"key": "post_id",
-			"value": "550e8400-e29b-41d4-a716-446655440000",
+			"key": "user_id",
+			"value": "",
 			"type": "string"
 		},
 		{
-			"key": "user_id",
-			"value": "user123",
+			"key": "user_email",
+			"value": "test@example.com",
 			"type": "string"
+		},
+		{
+			"key": "post_id",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{access_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Get cookies from response and store them",
+					"const cookieJar = pm.cookies;",
+					"const accessToken = cookieJar.get('access_token');",
+					"const refreshToken = cookieJar.get('refresh_token');",
+					"",
+					"if (accessToken) {",
+					"    pm.environment.set('access_token', accessToken);",
+					"}",
+					"",
+					"if (refreshToken) {",
+					"    pm.environment.set('refresh_token', refreshToken);",
+					"}"
+				]
+			}
 		}
 	]
 }
