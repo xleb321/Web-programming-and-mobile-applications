@@ -12,7 +12,7 @@
   <ul>
     <li>Скачать</li>
     <li>Собрать проект командой - <b>docker build -t new-year-counter .</b></li>
-    <li>Запустить проект - <b>docker run -d -p 3000:3000 --name new-year-app new-year-counter<b></li>
+    <li>Запустить проект - <b>docker run -d -p 3000:3000 --name new-year-app new-year-counter</b></li>
     <li>Запрос на получение результата - <b>curl http://localhost:3000</b></li>
   </ul>
   
@@ -23,13 +23,13 @@
   <h3>Что отображается в браузере (если всё хорошо)</h3>
   <img src="./assets/lab1/img2.png" alt="Что отображается в браузере localhost:3000" width="600"/>
   
-  <i>Приносим изменения за отсуцтвие коментариев в коде</i>
+  <i>Приносим изменения за отсутствие комментариев в коде</i>
 </details>
 
 <h1>Rugram API - Social Media Backend Service</h1>
 
 <details>
-  <summary><h2>📱 Lab 2 - rugram-api</h2></summary>
+  <summary><h2>📱 Lab 2 - rugram-api (Base API)</h2></summary>
   
   <h3>Используемые технологии:</h3>
   <ul>
@@ -52,7 +52,7 @@
     <li><b>Config</b> - управление конфигурацией через .env</li>
   </ul>
   
-  <h3>REST API Endpoints</h3>
+  <h3>REST API Endpoints (Базовая версия)</h3>
   <table>
     <tr>
       <th>Method</th>
@@ -99,185 +99,457 @@
       <td>/health</td>
       <td>Health check сервиса</td>
     </tr>
-  </table>
+   </table>
+</details>
+
+<details open>
+  <summary><h2>🔐 Lab 3 - rugram-api (Extended with Auth & Users)</h2></summary>
   
-  <h3>Модель данных (Post)</h3>
+  <h3>✨ Новый функционал</h3>
   <ul>
-    <li><b>ID</b> - UUID (уникальный идентификатор)</li>
-    <li><b>UserID</b> - идентификатор автора (string)</li>
-    <li><b>Title</b> - заголовок (max 200 символов)</li>
-    <li><b>Description</b> - описание (max 1000 символов)</li>
-    <li><b>ImageURL</b> - ссылка на изображение</li>
-    <li><b>Status</b> - статус (active/draft/archived)</li>
-    <li><b>LikesCount</b> - количество лайков</li>
-    <li><b>CreatedAt/UpdatedAt</b> - временные метки</li>
-    <li><b>DeletedAt</b> - мягкое удаление (soft delete)</li>
+    <li><b>🔐 Аутентификация</b> - JWT токены (Access + Refresh)</li>
+    <li><b>👤 Управление пользователями</b> - регистрация, профиль, обновление данных</li>
+    <li><b>🌐 OAuth 2.0</b> - Вход через Яндекс и ВКонтакте</li>
+    <li><b>🔒 Безопасность</b> - bcrypt для паролей, хеширование токенов</li>
+    <li><b>📊 Сессии</b> - управление несколькими сессиями, logout-all</li>
+    <li><b>💾 Soft Delete</b> - безопасное удаление пользователей</li>
   </ul>
   
-  <h3>Инструкция по запуску с Docker</h3>
+  <h3>Расширенная архитектура</h3>
+  <pre><code>rugram-api/
+├── cmd/
+│   └── main.go                 # Точка входа с инициализацией
+├── internal/
+│   ├── config/
+│   │   └── config.go          # Конфигурация
+│   ├── database/
+│   │   ├── db.go              # Подключение к БД
+│   │   └── migrations/        # Миграции БД
+│   │       ├── 001_create_users_table.sql
+│   │       ├── 002_create_user_tokens_table.sql
+│   │       ├── 003_create_posts_table.sql
+│   │       ├── 004_create_comments_table.sql
+│   │       └── 005_create_likes_table.sql
+│   ├── models/
+│   │   ├── user.go            # Модель пользователя
+│   │   ├── token.go           # Модель токена
+│   │   └── post.go            # Модель поста
+│   ├── repository/
+│   │   ├── user_repository.go
+│   │   ├── token_repository.go
+│   │   └── post_repository.go
+│   ├── service/
+│   │   ├── auth_service.go    # Аутентификация
+│   │   ├── oauth_service.go   # OAuth провайдеры
+│   │   ├── user_service.go    # Управление пользователями
+│   │   └── post_service.go    # Управление постами
+│   ├── handlers/
+│   │   ├── auth_handler.go    # Auth endpoints
+│   │   ├── user_handler.go    # User endpoints
+│   │   └── post_handler.go    # Post endpoints
+│   ├── middleware/
+│   │   └── auth.go            # JWT middleware
+│   ├── dto/
+│   │   ├── dto.go             # Auth и User DTO
+│   │   └── post.go            # Post DTO
+│   └── utils/
+│       ├── crypto.go          # Хеширование паролей
+│       ├── jwt.go             # JWT работа
+│       └── response.go        # Утилиты ответов
+├── pkg/
+│   └── utils/
+│       └── response.go
+├── .env                        # Переменные окружения
+├── docker-compose.yml
+├── Dockerfile
+└── go.mod</code></pre>
   
-  <p><b>1. Клонировать репозиторий</b></p>
-  <pre><code>git clone https://github.com/yourusername/rugram-api.git
-cd rugram-api</code></pre>
+  <h3>🔐 Полный список API Endpoints</h3>
   
-  <p><b>2. Создать файл .env с переменными окружения</b></p>
-  <pre><code>DB_HOST=postgres
+  <h4>Аутентификация и пользователи</h4>
+  <table>
+    <tr>
+      <th>Method</th>
+      <th>Endpoint</th>
+      <th>Description</th>
+      <th>Auth Required</th>
+    </tr>
+    <tr>
+      <td>POST</td>
+      <td>/api/v1/auth/register</td>
+      <td>Регистрация нового пользователя</td>
+      <td>❌</td>
+    </tr>
+    <tr>
+      <td>POST</td>
+      <td>/api/v1/auth/login</td>
+      <td>Вход в систему (устанавливает cookies)</td>
+      <td>❌</td>
+    </tr>
+    <tr>
+      <td>GET</td>
+      <td>/api/v1/auth/whoami</td>
+      <td>Получить информацию о текущем пользователе</td>
+      <td>✅</td>
+    </tr>
+    <tr>
+      <td>POST</td>
+      <td>/api/v1/auth/refresh</td>
+      <td>Обновить access token через refresh token</td>
+      <td>❌</td>
+    </tr>
+    <tr>
+      <td>POST</td>
+      <td>/api/v1/auth/logout</td>
+      <td>Выход из текущей сессии</td>
+      <td>✅</td>
+    </tr>
+    <tr>
+      <td>POST</td>
+      <td>/api/v1/auth/logout-all</td>
+      <td>Выход из всех сессий пользователя</td>
+      <td>✅</td>
+    </tr>
+    <tr>
+      <td>GET</td>
+      <td>/api/v1/users/:id</td>
+      <td>Получить пользователя по ID</td>
+      <td>✅</td>
+    </tr>
+    <tr>
+      <td>PUT/PATCH</td>
+      <td>/api/v1/users/:id</td>
+      <td>Обновить данные пользователя</td>
+      <td>✅</td>
+    </tr>
+    <tr>
+      <td>DELETE</td>
+      <td>/api/v1/users/:id</td>
+      <td>Мягкое удаление аккаунта</td>
+      <td>✅</td>
+    </tr>
+    <tr>
+      <td>GET</td>
+      <td>/api/v1/users</td>
+      <td>Список пользователей (с пагинацией)</td>
+      <td>✅</td>
+    </tr>
+    <tr>
+      <td>GET</td>
+      <td>/api/v1/users/email/:email</td>
+      <td>Поиск по email</td>
+      <td>✅</td>
+    </tr>
+  </table>
+  
+  <h4>OAuth 2.0 провайдеры</h4>
+  <table>
+    <tr>
+      <th>Method</th>
+      <th>Endpoint</th>
+      <th>Description</th>
+    </tr>
+    <tr>
+      <td>GET</td>
+      <td>/api/v1/auth/oauth/yandex</td>
+      <td>Вход через Яндекс (редирект)</td>
+    </tr>
+    <tr>
+      <td>GET</td>
+      <td>/api/v1/auth/oauth/vk</td>
+      <td>Вход через ВКонтакте (редирект)</td>
+    </tr>
+  </table>
+  
+  <h4>Посты (расширенные)</h4>
+  <table>
+    <tr>
+      <th>Method</th>
+      <th>Endpoint</th>
+      <th>Description</th>
+      <th>Auth Required</th>
+    </tr>
+    <tr>
+      <td>GET</td>
+      <td>/api/v1/posts</td>
+      <td>Все посты с пагинацией</td>
+      <td>❌</td>
+    </tr>
+    <tr>
+      <td>GET</td>
+      <td>/api/v1/posts/:id</td>
+      <td>Пост по ID</td>
+      <td>❌</td>
+    </tr>
+    <tr>
+      <td>POST</td>
+      <td>/api/v1/posts</td>
+      <td>Создать пост (привязан к user_id)</td>
+      <td>✅</td>
+    </tr>
+    <tr>
+      <td>PUT/PATCH</td>
+      <td>/api/v1/posts/:id</td>
+      <td>Обновить свой пост</td>
+      <td>✅</td>
+    </tr>
+    <tr>
+      <td>DELETE</td>
+      <td>/api/v1/posts/:id</td>
+      <td>Удалить свой пост</td>
+      <td>✅</td>
+    </tr>
+    <tr>
+      <td>GET</td>
+      <td>/api/v1/posts/user/:userId</td>
+      <td>Посты пользователя</td>
+      <td>❌</td>
+    </tr>
+  </table>
+  
+  <h3>📝 Примеры запросов</h3>
+  
+  <h4>Регистрация</h4>
+  <pre><code>curl -X POST http://localhost:4200/api/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "password": "password123",
+    "phone": "+79991234567"
+  }'</code></pre>
+  
+  <h4>Вход (устанавливает cookies)</h4>
+  <pre><code>curl -X POST http://localhost:4200/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "password": "password123"
+  }' \
+  -c cookies.txt</code></pre>
+  
+  <h4>Кто я (текущий пользователь)</h4>
+  <pre><code>curl http://localhost:4200/api/v1/auth/whoami \
+  -b cookies.txt</code></pre>
+  
+  <h4>Создать пост (авторизованный)</h4>
+  <pre><code>curl -X POST http://localhost:4200/api/v1/posts \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "your-uuid-here",
+    "title": "Мой первый пост!",
+    "description": "Создано через API",
+    "status": "active"
+  }' \
+  -b cookies.txt</code></pre>
+  
+  <h4>Обновить профиль</h4>
+  <pre><code>curl -X PATCH http://localhost:4200/api/v1/users/{user-id} \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "newemail@example.com",
+    "phone": "+79876543210"
+  }' \
+  -b cookies.txt</code></pre>
+  
+  <h4>Выход из всех сессий</h4>
+  <pre><code>curl -X POST http://localhost:4200/api/v1/auth/logout-all \
+  -b cookies.txt</code></pre>
+  
+  <h3>📊 Модели данных</h3>
+  
+  <h4>Users Table</h4>
+  <pre><code>{
+  "id": "uuid",
+  "email": "user@example.com",
+  "phone": "+79991234567",
+  "yandex_id": "optional",
+  "vk_id": "optional",
+  "created_at": "timestamp",
+  "updated_at": "timestamp",
+  "deleted_at": "timestamp (soft delete)"
+}</code></pre>
+  
+  <h4>User Tokens Table</h4>
+  <pre><code>{
+  "id": "uuid",
+  "user_id": "uuid",
+  "token_hash": "sha256 hash",
+  "token_type": "access | refresh",
+  "expires_at": "timestamp",
+  "revoked": "boolean"
+}</code></pre>
+  
+  <h3>🐳 Docker Compose конфигурация</h3>
+  
+  <pre><code>version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: rugram_user
+      POSTGRES_PASSWORD: rugram_password
+      POSTGRES_DB: rugram_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rugram_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: .
+    ports:
+      - "4200:4200"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: rugram_user
+      DB_PASSWORD: rugram_password
+      DB_NAME: rugram_db
+      APP_PORT: 4200
+      JWT_ACCESS_SECRET: your-access-secret-key
+      JWT_REFRESH_SECRET: your-refresh-secret-key
+    volumes:
+      - .:/app
+
+volumes:
+  postgres_data:</code></pre>
+  
+  <h3>🔧 Environment Variables</h3>
+  
+  <pre><code># Database
+DB_HOST=localhost
 DB_PORT=5432
 DB_USER=rugram_user
 DB_PASSWORD=rugram_password
 DB_NAME=rugram_db
+
+# App
 APP_PORT=4200
 APP_ENV=development
+
+# Pagination
 DEFAULT_PAGE=1
 DEFAULT_LIMIT=10
-MAX_LIMIT=100</code></pre>
+MAX_LIMIT=100
+
+# JWT Secrets (измените в production!)
+JWT_ACCESS_SECRET=your-super-secret-access-key-here
+JWT_REFRESH_SECRET=your-super-secret-refresh-key-here
+
+# OAuth Yandex
+YANDEX_CLIENT_ID=your_yandex_client_id
+YANDEX_CLIENT_SECRET=your_yandex_client_secret
+YANDEX_REDIRECT_URI=http://localhost:4200/api/v1/auth/oauth/yandex/callback
+
+# OAuth VK
+VK_CLIENT_ID=your_vk_client_id
+VK_CLIENT_SECRET=your_vk_client_secret
+VK_REDIRECT_URI=http://localhost:4200/api/v1/auth/oauth/vk/callback</code></pre>
   
-  <p><b>3. Собрать и запустить проект через Docker Compose</b></p>
-  <pre><code># Собрать образы и запустить контейнеры
+  <h3>🛡️ Безопасность</h3>
+  
+  <ul>
+    <li><b>Пароли</b> - хешируются с bcrypt (автоматическая соль)</li>
+    <li><b>Токены</b> - хранятся в хешированном виде с солью</li>
+    <li><b>JWT</b> - содержит user_id и тип токена</li>
+    <li><b>Cookies</b> - httpOnly, secure в production</li>
+    <li><b>Soft Delete</b> - данные не удаляются физически</li>
+    <li><b>CSRF Protection</b> - state параметр для OAuth</li>
+  </ul>
+  
+  <h3>🚀 Инструкция по запуску</h3>
+  
+  <p><b>1. Клонировать и настроить</b></p>
+  <pre><code>git clone https://github.com/yourusername/rugram-api.git
+cd rugram-api
+cp .env.example .env
+# Отредактируйте .env, добавьте JWT_SECRET</code></pre>
+  
+  <p><b>2. Запуск с Docker Compose</b></p>
+  <pre><code># Собрать и запустить
 docker-compose up -d --build
 
-# Просмотреть логи
-docker-compose logs -f
+# Проверить логи
+docker-compose logs -f api
 
-# Остановить контейнеры
-docker-compose down
+# Выполнить миграции (автоматически при старте)</code></pre>
+  
+  <p><b>3. Проверка работы</b></p>
+  <pre><code># Health check
+curl http://localhost:4200/health
 
-# Полностью очистить (с удалением данных БД)
-docker-compose down -v</code></pre>
-  
-  <p><b>4. Альтернативный запуск без Docker</b></p>
-  <pre><code># Установить зависимости
-go mod download
-
-# Запустить PostgreSQL вручную и изменить DB_HOST=localhost в .env
-go run main.go</code></pre>
-  
-  <h3>🔧 Тестирование API запросов</h3>
-  
-  <p><b>Health check</b></p>
-  <pre><code>curl http://localhost:4200/health</code></pre>
-  
-  <p><b>Создать пост</b></p>
-  <pre><code>curl -X POST http://localhost:4200/api/v1/posts \
+# Регистрация
+curl -X POST http://localhost:4200/api/v1/auth/register \
   -H "Content-Type: application/json" \
-  -d '{
-    "user_id": "user123",
-    "title": "Мой первый пост",
-    "description": "Это тестовый пост",
-    "status": "active"
-  }'</code></pre>
-  
-  <p><b>Получить все посты (с пагинацией)</b></p>
-  <pre><code>curl "http://localhost:4200/api/v1/posts?page=1&limit=10"</code></pre>
-  
-  <p><b>Получить пост по ID</b></p>
-  <pre><code>curl http://localhost:4200/api/v1/posts/{post_id}</code></pre>
-  
-  <p><b>Обновить пост</b></p>
-  <pre><code>curl -X PUT http://localhost:4200/api/v1/posts/{post_id} \
+  -d '{"email":"test@test.com","password":"test123"}'
+
+# Логин
+curl -X POST http://localhost:4200/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{
-    "title": "Обновленный заголовок",
-    "status": "archived"
-  }'</code></pre>
+  -d '{"email":"test@test.com","password":"test123"}' \
+  -c cookies.txt
+
+# Проверка whoami
+curl http://localhost:4200/api/v1/auth/whoami -b cookies.txt</code></pre>
   
-  <p><b>Удалить пост (мягкое удаление)</b></p>
-  <pre><code>curl -X DELETE http://localhost:4200/api/v1/posts/{post_id}</code></pre>
+  <h3>📸 Скриншоты работы (Lab 3)</h3>
   
-  <h3>Пример ответа API</h3>
+  <h4>Регистрация нового пользователя</h4>
+  <img src="./assets/lab3/register.png" alt="POST /auth/register создание пользователя" width="600"/>
   
-  <p><b>Успешный ответ (200 OK)</b></p>
-  <pre><code>{
-  "success": true,
-  "data": {
-    "id": "123e4567-e89b-12d3-a456-426614174000",
-    "user_id": "user123",
-    "title": "Мой первый пост",
-    "description": "Это тестовый пост",
-    "image_url": "",
-    "status": "active",
-    "likes_count": 0,
-    "created_at": "2026-04-03T18:00:00Z",
-    "updated_at": "2026-04-03T18:00:00Z"
-  }
-}</code></pre>
+  <h4>Вход и установка cookies</h4>
+  <img src="./assets/lab3/login.png" alt="POST /auth/login с сохранением cookies" width="600"/>
   
-  <p><b>Пагинированный ответ</b></p>
-  <pre><code>{
-  "success": true,
-  "data": {
-    "data": [...],
-    "meta": {
-      "total": 25,
-      "page": 1,
-      "limit": 10,
-      "total_pages": 3
-    }
-  }
-}</code></pre>
+  <h4>Получение информации о текущем пользователе</h4>
+  <img src="./assets/lab3/whoami.png" alt="GET /auth/whoami возвращает данные пользователя" width="600"/>
   
-  <h3>Решение типичных проблем</h3>
+  <h4>Создание поста авторизованным пользователем</h4>
+  <img src="./assets/lab3/create-post-auth.png" alt="POST /posts с авторизацией" width="600"/>
   
-  <p><b>Ошибка: "database 'rugram_user' does not exist"</b></p>
+  <h4>Обновление профиля пользователя</h4>
+  <img src="./assets/lab3/update-user.png" alt="PATCH /users/:id обновление данных" width="600"/>
+  
+  <h4>Список всех пользователей (пагинация)</h4>
+  <img src="./assets/lab3/users-list.png" alt="GET /users с пагинацией" width="600"/>
+  
+  <h4>Docker контейнеры</h4>
+  <img src="./assets/lab3/docker-containers.png" alt="Запущенные контейнеры" width="600"/>
+  
+  <h4>Таблицы в PostgreSQL</h4>
+  <img src="./assets/lab3/postgres-tables.png" alt="Структура БД: users, user_tokens, posts" width="600"/>
+  
+  <h4>Логи аутентификации</h4>
+  <img src="./assets/lab3/auth-logs.png" alt="Логи с JWT и OAuth операциями" width="600"/>
+  
+  <h3>Решение проблем</h3>
+  
+  <p><b>Ошибка: "relation already exists" при миграциях</b></p>
   <ul>
-    <li>Проверьте .env файл: DB_NAME=rugram_db (не DB_USER)</li>
-    <li>Очистите тома Docker: <code>docker-compose down -v</code></li>
-    <li>Пересоберите проект: <code>docker-compose up -d --build</code></li>
+    <li>Используйте <code>CREATE TABLE IF NOT EXISTS</code> и <code>CREATE INDEX IF NOT EXISTS</code></li>
+    <li>Очистите volume: <code>docker-compose down -v</code></li>
+    <li>Удалите таблицу <code>schema_migrations</code> если используется</li>
   </ul>
   
-  <p><b>Порт уже занят</b></p>
+  <p><b>Ошибка: "invalid or expired token"</b></p>
   <ul>
-    <li>Смените порт в .env: <code>APP_PORT=4201</code></li>
-    <li>Или остановите процесс: <code>lsof -i :4200 && kill PID</code></li>
+    <li>Проверьте системное время на сервере</li>
+    <li>Убедитесь что JWT_SECRET одинаковый при создании и проверке</li>
+    <li>Access token живет 15 минут, используйте /refresh</li>
   </ul>
   
-  <h3>Скриншоты работы</h3>
-  
-  <h4>Docker контейнеры в работе</h4>
-  <img src="./assets/lab2/docker-containers.png" alt="Запущенные Docker контейнеры: rugram_db и rugram_api" width="600"/>
-  
-  <h4>Health check эндпоинт</h4>
-  <img src="./assets/lab2/health-check.png" alt="GET /health возвращает статус OK" width="600"/>
-  
-  <h4>Создание поста через curl</h4>
-  <img src="./assets/lab2/create-post.png" alt="POST запрос на создание поста" width="600"/>
-  
-  <h4>Получение списка постов</h4>
-  <img src="./assets/lab2/get-posts.png" alt="GET запрос на получение всех постов с пагинацией" width="600"/>
-  
-  <h4>Логи приложения</h4>
-  <img src="./assets/lab2/app-logs.png" alt="Логи rugram_api с информацией о запросах" width="600"/>
-  
-  <h4>PostgreSQL база данных</h4>
-  <img src="./assets/lab2/postgres-data.png" alt="Данные в таблице posts PostgreSQL" width="600"/>
-  
-  <h3>Структура проекта</h3>
-  <pre><code>rugram-api/
-├── cmd/
-│   └── main.go                 # Точка входа
-├── internal/
-│   ├── config/
-│   │   └── config.go          # Конфигурация (.env)
-│   ├── database/
-│   │   ├── db.go              # Подключение к БД
-│   │   └── migrations/        
-│   │       └── 001_create_posts_table.sql
-│   ├── models/
-│   │   └── post.go            # Модель данных
-│   ├── repository/
-│   │   └── post_repository.go # Слой доступа к данным
-│   ├── service/
-│   │   └── post_service.go    # Бизнес-логика
-│   ├── handlers/
-│   │   └── post_handler.go    # HTTP обработчики
-│   └── dto/
-│       └── post.go            # DTO для API
-├── pkg/
-│   └── utils/
-│       └── response.go        # Утилиты ответов
-├── .env                        # Переменные окружения
-├── docker-compose.yml          # Docker Compose конфиг
-├── Dockerfile                  # Docker образ
-└── go.mod                      # Go зависимости</code></pre>
+  <p><b>OAuth не работает</b></p>
+  <ul>
+    <li>Зарегистрируйте приложение в Яндекс.OAuth и VK API</li>
+    <li>Укажите правильные Redirect URIs</li>
+    <li>Проверьте переменные окружения YANDEX_CLIENT_ID и др.</li>
+  </ul>
 
 </details>
