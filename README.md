@@ -103,68 +103,17 @@
 </details>
 
 <details open>
-  <summary><h2>🔐 Lab 3 - rugram-api (Extended with Auth & Users)</h2></summary>
+  <summary><h2>Lab 3 - rugram-api (Extended with Auth & Users)</h2></summary>
   
-  <h3>✨ Новый функционал</h3>
+  <h3>Новый функционал</h3>
   <ul>
-    <li><b>🔐 Аутентификация</b> - JWT токены (Access + Refresh)</li>
-    <li><b>👤 Управление пользователями</b> - регистрация, профиль, обновление данных</li>
-    <li><b>🌐 OAuth 2.0</b> - Вход через Яндекс и ВКонтакте</li>
-    <li><b>🔒 Безопасность</b> - bcrypt для паролей, хеширование токенов</li>
-    <li><b>📊 Сессии</b> - управление несколькими сессиями, logout-all</li>
-    <li><b>💾 Soft Delete</b> - безопасное удаление пользователей</li>
+    <li><b>Аутентификация</b> - JWT токены (Access + Refresh)</li>
+    <li><b>Управление пользователями</b> - регистрация, профиль, обновление данных</li>
+    <li><b>OAuth 2.0</b> - Вход через Яндекс и ВКонтакте</li>
+    <li><b>Безопасность</b> - bcrypt для паролей, хеширование токенов</li>
+    <li><b>Сессии</b> - управление несколькими сессиями, logout-all</li>
+    <li><b>Soft Delete</b> - безопасное удаление пользователей</li>
   </ul>
-  
-  <h3>Расширенная архитектура</h3>
-  <pre><code>rugram-api/
-├── cmd/
-│   └── main.go                 # Точка входа с инициализацией
-├── internal/
-│   ├── config/
-│   │   └── config.go          # Конфигурация
-│   ├── database/
-│   │   ├── db.go              # Подключение к БД
-│   │   └── migrations/        # Миграции БД
-│   │       ├── 001_create_users_table.sql
-│   │       ├── 002_create_user_tokens_table.sql
-│   │       ├── 003_create_posts_table.sql
-│   │       ├── 004_create_comments_table.sql
-│   │       └── 005_create_likes_table.sql
-│   ├── models/
-│   │   ├── user.go            # Модель пользователя
-│   │   ├── token.go           # Модель токена
-│   │   └── post.go            # Модель поста
-│   ├── repository/
-│   │   ├── user_repository.go
-│   │   ├── token_repository.go
-│   │   └── post_repository.go
-│   ├── service/
-│   │   ├── auth_service.go    # Аутентификация
-│   │   ├── oauth_service.go   # OAuth провайдеры
-│   │   ├── user_service.go    # Управление пользователями
-│   │   └── post_service.go    # Управление постами
-│   ├── handlers/
-│   │   ├── auth_handler.go    # Auth endpoints
-│   │   ├── user_handler.go    # User endpoints
-│   │   └── post_handler.go    # Post endpoints
-│   ├── middleware/
-│   │   └── auth.go            # JWT middleware
-│   ├── dto/
-│   │   ├── dto.go             # Auth и User DTO
-│   │   └── post.go            # Post DTO
-│   └── utils/
-│       ├── crypto.go          # Хеширование паролей
-│       ├── jwt.go             # JWT работа
-│       └── response.go        # Утилиты ответов
-├── pkg/
-│   └── utils/
-│       └── response.go
-├── .env                        # Переменные окружения
-├── docker-compose.yml
-├── Dockerfile
-└── go.mod</code></pre>
-  
-  <h3>🔐 Полный список API Endpoints</h3>
   
   <h4>Аутентификация и пользователи</h4>
   <table>
@@ -355,7 +304,7 @@
   <pre><code>curl -X POST http://localhost:4200/api/v1/auth/logout-all \
   -b cookies.txt</code></pre>
   
-  <h3>📊 Модели данных</h3>
+  <h3>Модели данных</h3>
   
   <h4>Users Table</h4>
   <pre><code>{
@@ -378,94 +327,41 @@
   "expires_at": "timestamp",
   "revoked": "boolean"
 }</code></pre>
-  
-  <h3>🐳 Docker Compose конфигурация</h3>
-  
-  <pre><code>version: '3.8'
 
-services:
-  postgres:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_USER: rugram_user
-      POSTGRES_PASSWORD: rugram_password
-      POSTGRES_DB: rugram_db
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U rugram_user"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  api:
-    build: .
-    ports:
-      - "4200:4200"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USER: rugram_user
-      DB_PASSWORD: rugram_password
-      DB_NAME: rugram_db
-      APP_PORT: 4200
-      JWT_ACCESS_SECRET: your-access-secret-key
-      JWT_REFRESH_SECRET: your-refresh-secret-key
-    volumes:
-      - .:/app
-
-volumes:
-  postgres_data:</code></pre>
-  
   <h3>🔧 Environment Variables</h3>
   
   <pre><code># Database
-DB_HOST=localhost
-DB_PORT=5432
-DB_USER=rugram_user
-DB_PASSWORD=rugram_password
-DB_NAME=rugram_db
+    DB_HOST=localhost
+    DB_PORT=5432
+    DB_USER=rugram_user
+    DB_PASSWORD=rugram_password
+    DB_NAME=rugram_db
 
-# App
-APP_PORT=4200
-APP_ENV=development
+    # App
+    APP_PORT=4200
+    APP_ENV=development
 
-# Pagination
-DEFAULT_PAGE=1
-DEFAULT_LIMIT=10
-MAX_LIMIT=100
+    # Pagination
+    DEFAULT_PAGE=1
+    DEFAULT_LIMIT=10
+    MAX_LIMIT=100
 
-# JWT Secrets (измените в production!)
-JWT_ACCESS_SECRET=your-super-secret-access-key-here
-JWT_REFRESH_SECRET=your-super-secret-refresh-key-here
+    # JWT Secrets (измените в production!)
+    JWT_ACCESS_SECRET=your-super-secret-access-key-here
+    JWT_REFRESH_SECRET=your-super-secret-refresh-key-here
 
-# OAuth Yandex
-YANDEX_CLIENT_ID=your_yandex_client_id
-YANDEX_CLIENT_SECRET=your_yandex_client_secret
-YANDEX_REDIRECT_URI=http://localhost:4200/api/v1/auth/oauth/yandex/callback
+    # OAuth Yandex
+    YANDEX_CLIENT_ID=your_yandex_client_id
+    YANDEX_CLIENT_SECRET=your_yandex_client_secret
+    YANDEX_REDIRECT_URI=http://localhost:4200/api/v1/auth/oauth/yandex/callback
 
-# OAuth VK
-VK_CLIENT_ID=your_vk_client_id
-VK_CLIENT_SECRET=your_vk_client_secret
-VK_REDIRECT_URI=http://localhost:4200/api/v1/auth/oauth/vk/callback</code></pre>
+    # OAuth VK
+    VK_CLIENT_ID=your_vk_client_id
+    VK_CLIENT_SECRET=your_vk_client_secret
+    VK_REDIRECT_URI=http://localhost:4200/api/v1/auth/oauth/vk/callback
+  </code></pre>
   
-  <h3>🛡️ Безопасность</h3>
-  
-  <ul>
-    <li><b>Пароли</b> - хешируются с bcrypt (автоматическая соль)</li>
-    <li><b>Токены</b> - хранятся в хешированном виде с солью</li>
-    <li><b>JWT</b> - содержит user_id и тип токена</li>
-    <li><b>Cookies</b> - httpOnly, secure в production</li>
-    <li><b>Soft Delete</b> - данные не удаляются физически</li>
-    <li><b>CSRF Protection</b> - state параметр для OAuth</li>
-  </ul>
-  
-  <h3>🚀 Инструкция по запуску</h3>
+  <h3>Инструкция по запуску</h3>
   
   <p><b>1. Клонировать и настроить</b></p>
   <pre><code>git clone https://github.com/yourusername/rugram-api.git
@@ -500,7 +396,7 @@ curl -X POST http://localhost:4200/api/v1/auth/login \
 # Проверка whoami
 curl http://localhost:4200/api/v1/auth/whoami -b cookies.txt</code></pre>
   
-  <h3>📸 Скриншоты работы (Lab 3)</h3>
+  <h3>Скриншоты работы (Lab 3)</h3>
   
   <h4>Регистрация нового пользователя</h4>
   <img src="./assets/lab3/register.png" alt="POST /auth/register создание пользователя" width="600"/>
