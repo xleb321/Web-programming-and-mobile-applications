@@ -1,15 +1,15 @@
 package service
 
 import (
-    "database/sql"
-    "errors"
-    "fmt"
-    
-    "rugram-api/internal/dto"
-    "rugram-api/internal/repository"
-    "rugram-api/internal/utils"
-    
-    "github.com/google/uuid"
+	"database/sql"
+	"errors"
+	"fmt"
+
+	"rugram-api/internal/dto"
+	"rugram-api/internal/repository"
+	"rugram-api/internal/utils"
+
+	"github.com/google/uuid"
 )
 
 type UserService struct {

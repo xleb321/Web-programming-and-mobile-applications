@@ -1,20 +1,20 @@
 package service
 
 import (
-    "bytes"
-    "encoding/json"
-    "errors"
-    "fmt"
-    "io"
-    "net/http"
-    "net/url"
-    "os"
-    "time"
-    
-    "rugram-api/internal/dto"
-    "rugram-api/internal/models"
-    "rugram-api/internal/repository"
-    "rugram-api/internal/utils"
+	"bytes"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"net/http"
+	"net/url"
+	"os"
+	"time"
+
+	"rugram-api/internal/dto"
+	"rugram-api/internal/models"
+	"rugram-api/internal/repository"
+	"rugram-api/internal/utils"
 )
 
 type OAuthService struct {
@@ -64,13 +64,13 @@ func (s *OAuthService) HandleYandexCallback(code, state string) (*models.User, s
         return nil, "", "", err
     }
     
-    // Create local tokens
-    accessToken, err := utils.CreateAccessToken(user.ID.String())
+    // Create local tokens (игнорируем JTI, так как он не используется в OAuthService)
+    accessToken, _, err := utils.CreateAccessToken(user.ID.String())
     if err != nil {
         return nil, "", "", err
     }
     
-    refreshToken, err := utils.CreateRefreshToken(user.ID.String())
+    refreshToken, _, err := utils.CreateRefreshToken(user.ID.String())
     if err != nil {
         return nil, "", "", err
     }
@@ -259,12 +259,12 @@ func (s *OAuthService) HandleVKCallback(code, state string) (*models.User, strin
     }
     
     // Create local tokens
-    accessToken, err := utils.CreateAccessToken(user.ID.String())
+    accessToken, _, err := utils.CreateAccessToken(user.ID.String())
     if err != nil {
         return nil, "", "", err
     }
     
-    refreshToken, err := utils.CreateRefreshToken(user.ID.String())
+    refreshToken, _, err := utils.CreateRefreshToken(user.ID.String())
     if err != nil {
         return nil, "", "", err
     }

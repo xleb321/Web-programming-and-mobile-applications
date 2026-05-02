@@ -1,19 +1,20 @@
 package main
 
 import (
-    "database/sql"
-    "log"
-    "os"
-    
-    "rugram-api/internal/config"
-    "rugram-api/internal/database"
-    "rugram-api/internal/handlers"
-    "rugram-api/internal/middleware"
-    "rugram-api/internal/repository"
-    "rugram-api/internal/service"
-    "rugram-api/pkg/utils"
-    
-    "github.com/gin-gonic/gin"
+	"database/sql"
+	"log"
+	"os"
+
+	"rugram-api/internal/cache"
+	"rugram-api/internal/config"
+	"rugram-api/internal/database"
+	"rugram-api/internal/handlers"
+	"rugram-api/internal/middleware"
+	"rugram-api/internal/repository"
+	"rugram-api/internal/service"
+	"rugram-api/pkg/utils"
+
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
@@ -27,6 +28,15 @@ func main() {
     }
     defer db.Close()
     
+    // Connect to Redis
+    cacheSvc, err := cache.NewCacheService()
+    if err != nil {
+        log.Printf("Warning: Redis connection failed: %v. Cache will be disabled.", err)
+    } else {
+        defer cacheSvc.Close()
+        log.Println("Redis cache service initialized")
+    }
+    
     // Run migrations
     if err := runMigrations(db); err != nil {
         log.Fatalf("Failed to run migrations: %v", err)
@@ -38,10 +48,10 @@ func main() {
     postRepo := repository.NewPostRepository(db)
     
     // Initialize services
-    authService := service.NewAuthService(userRepo, tokenRepo)
+    authService := service.NewAuthService(userRepo, tokenRepo, cacheSvc)
     oauthService := service.NewOAuthService(userRepo, tokenRepo)
     userService := service.NewUserService(userRepo)
-    postService := service.NewPostService(postRepo)
+    postService := service.NewPostService(postRepo, cacheSvc)
     
     // Initialize handlers
     authHandler := handlers.NewAuthHandler(authService, oauthService)

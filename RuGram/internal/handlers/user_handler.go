@@ -1,14 +1,15 @@
 package handlers
 
 import (
-    "net/http"
-    "strconv"
-    
-    "rugram-api/internal/dto"
-    "rugram-api/internal/service"
-    "rugram-api/pkg/utils"
-    
-    "github.com/gin-gonic/gin"
+	"net/http"
+	"strconv"
+
+	"rugram-api/internal/dto"
+	"rugram-api/internal/middleware"
+	"rugram-api/internal/service"
+	"rugram-api/pkg/utils"
+
+	"github.com/gin-gonic/gin"
 )
 
 type UserHandler struct {
@@ -26,11 +27,15 @@ func NewUserHandler(userService *service.UserService) *UserHandler {
 func (h *UserHandler) GetByID(c *gin.Context) {
     id := c.Param("id")
     
-    // Check if user is requesting their own data or is admin
-    currentUserID, exists := c.Get("userID")
-    if exists && currentUserID != id {
-        // В реальном приложении здесь должна быть проверка на администратора
-        // Для простоты разрешаем получать только свои данные
+    // Check if user is requesting their own data
+    userVal, exists := c.Get("user")
+    if !exists {
+        utils.ErrorResponse(c, http.StatusUnauthorized, "unauthorized")
+        return
+    }
+    
+    currentUser := userVal.(*middleware.AuthenticatedUser)
+    if currentUser.ID != id {
         utils.ErrorResponse(c, http.StatusForbidden, "you can only access your own user data")
         return
     }
@@ -73,8 +78,14 @@ func (h *UserHandler) Update(c *gin.Context) {
     id := c.Param("id")
     
     // Check if user is updating their own data
-    currentUserID, exists := c.Get("userID")
-    if !exists || currentUserID != id {
+    userVal, exists := c.Get("user")
+    if !exists {
+        utils.ErrorResponse(c, http.StatusUnauthorized, "unauthorized")
+        return
+    }
+    
+    currentUser := userVal.(*middleware.AuthenticatedUser)
+    if currentUser.ID != id {
         utils.ErrorResponse(c, http.StatusForbidden, "you can only update your own user data")
         return
     }
@@ -104,8 +115,14 @@ func (h *UserHandler) Delete(c *gin.Context) {
     id := c.Param("id")
     
     // Check if user is deleting their own data
-    currentUserID, exists := c.Get("userID")
-    if !exists || currentUserID != id {
+    userVal, exists := c.Get("user")
+    if !exists {
+        utils.ErrorResponse(c, http.StatusUnauthorized, "unauthorized")
+        return
+    }
+    
+    currentUser := userVal.(*middleware.AuthenticatedUser)
+    if currentUser.ID != id {
         utils.ErrorResponse(c, http.StatusForbidden, "you can only delete your own user account")
         return
     }
@@ -127,12 +144,9 @@ func (h *UserHandler) Delete(c *gin.Context) {
     c.Status(http.StatusNoContent)
 }
 
-// GetAll returns all users with pagination (admin only)
+// GetAll returns all users with pagination
 // GET /api/v1/users
 func (h *UserHandler) GetAll(c *gin.Context) {
-    // В реальном приложении здесь должна быть проверка на администратора
-    // Для простоты разрешаем только авторизованным пользователям
-    
     page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
     limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
     
