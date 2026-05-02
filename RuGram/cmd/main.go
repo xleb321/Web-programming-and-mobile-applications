@@ -21,6 +21,11 @@ func main() {
     // Load configuration
     cfg := config.LoadConfig()
     
+    // Set Gin mode
+    if cfg.AppEnv == "production" {
+        gin.SetMode(gin.ReleaseMode)
+    }
+    
     // Connect to database
     db, err := database.Connect(cfg)
     if err != nil {
@@ -61,10 +66,8 @@ func main() {
     // Setup Gin router
     router := gin.Default()
     
-    // Middleware
-    if cfg.AppEnv == "production" {
-        gin.SetMode(gin.ReleaseMode)
-    }
+    // Trust proxy - для продакшена можно указать конкретные прокси
+    // router.SetTrustedProxies([]string{"127.0.0.1"})
     
     // Routes
     api := router.Group("/api/v1")
@@ -113,7 +116,7 @@ func main() {
     }
     
     // Health check endpoint
-    router.GET("/health", func(c *gin.Context) {
+    router.Any("/health", func(c *gin.Context) {
         utils.SuccessResponse(c, 200, gin.H{
             "status":  "ok",
             "service": "rugram-api",
@@ -121,7 +124,7 @@ func main() {
     })
     
     // Start server
-    log.Printf("Server starting on port %s", cfg.AppPort)
+    log.Printf("Server starting on port %s in %s mode", cfg.AppPort, cfg.AppEnv)
     if err := router.Run(":" + cfg.AppPort); err != nil {
         log.Fatalf("Failed to start server: %v", err)
     }

@@ -6,9 +6,9 @@ services:
     container_name: rugram_db
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER:-rugram_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-rugram_password}
+      POSTGRES_DB: ${DB_NAME:-rugram_db}
     ports:
       - '5432:5432'
     volumes:
@@ -16,10 +16,15 @@ services:
     networks:
       - rugram_network
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ${DB_USER} -d ${DB_NAME}']
+      test:
+        [
+          'CMD-SHELL',
+          'pg_isready -U ${DB_USER:-rugram_user} -d ${DB_NAME:-rugram_db}',
+        ]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 10s
 
   redis:
     image: redis:7-alpine
@@ -31,12 +36,14 @@ services:
       - rugram_redis_data:/data
     networks:
       - rugram_network
-    command: redis-server --requirepass ${REDIS_PASSWORD} --appendonly yes
+    command: redis-server --requirepass ${REDIS_PASSWORD:-redis_password} --appendonly yes
     healthcheck:
-      test: ['CMD', 'redis-cli', '--pass', '${REDIS_PASSWORD}', 'ping']
+      test:
+        ['CMD', 'redis-cli', '-a', '${REDIS_PASSWORD:-redis_password}', 'ping']
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
 
   app:
     build: .
@@ -45,19 +52,19 @@ services:
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
-      DB_USER: ${DB_USER}
-      DB_PASSWORD: ${DB_PASSWORD}
-      DB_NAME: ${DB_NAME}
-      APP_PORT: ${APP_PORT}
-      APP_ENV: ${APP_ENV}
-      REDIS_HOST: ${REDIS_HOST}
-      REDIS_PORT: ${REDIS_PORT}
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
-      CACHE_TTL_DEFAULT: ${CACHE_TTL_DEFAULT}
-      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
-      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      DB_USER: ${DB_USER:-rugram_user}
+      DB_PASSWORD: ${DB_PASSWORD:-rugram_password}
+      DB_NAME: ${DB_NAME:-rugram_db}
+      APP_PORT: ${APP_PORT:-4200}
+      APP_ENV: ${APP_ENV:-development}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_password}
+      CACHE_TTL_DEFAULT: ${CACHE_TTL_DEFAULT:-300}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-default_access_secret}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-default_refresh_secret}
     ports:
-      - '${APP_PORT}:${APP_PORT}'
+      - '${APP_PORT:-4200}:${APP_PORT:-4200}'
     depends_on:
       postgres:
         condition: service_healthy
@@ -66,7 +73,7 @@ services:
     networks:
       - rugram_network
     volumes:
-      - ./internal/database/migrations:/root/internal/database/migrations
+      - ./internal/database/migrations:/app/internal/database/migrations
 
   pgadmin:
     image: dpage/pgadmin4:latest
