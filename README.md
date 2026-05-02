@@ -102,7 +102,7 @@
    </table>
 </details>
 
-<details open>
+<details>
   <summary><h2>Lab 3 - rugram-api (Extended with Auth & Users)</h2></summary>
   
   <h3>Новый функционал</h3>
@@ -222,41 +222,41 @@
       <td>GET</td>
       <td>/api/v1/posts</td>
       <td>Все посты с пагинацией</td>
-      <td>❌</td>
+      <td>error</td>
     </tr>
     <tr>
       <td>GET</td>
       <td>/api/v1/posts/:id</td>
       <td>Пост по ID</td>
-      <td>❌</td>
+      <td>error</td>
     </tr>
     <tr>
       <td>POST</td>
       <td>/api/v1/posts</td>
       <td>Создать пост (привязан к user_id)</td>
-      <td>✅</td>
+      <td>ok</td>
     </tr>
     <tr>
       <td>PUT/PATCH</td>
       <td>/api/v1/posts/:id</td>
       <td>Обновить свой пост</td>
-      <td>✅</td>
+      <td>ok</td>
     </tr>
     <tr>
       <td>DELETE</td>
       <td>/api/v1/posts/:id</td>
       <td>Удалить свой пост</td>
-      <td>✅</td>
+      <td>ok</td>
     </tr>
     <tr>
       <td>GET</td>
       <td>/api/v1/posts/user/:userId</td>
       <td>Посты пользователя</td>
-      <td>❌</td>
+      <td>error</td>
     </tr>
   </table>
   
-  <h3>📝 Примеры запросов</h3>
+  <h3>Примеры запросов</h3>
   
   <h4>Регистрация</h4>
   <pre><code>curl -X POST http://localhost:4200/api/v1/auth/register \
@@ -359,8 +359,9 @@
     VK_CLIENT_ID=your_vk_client_id
     VK_CLIENT_SECRET=your_vk_client_secret
     VK_REDIRECT_URI=http://localhost:4200/api/v1/auth/oauth/vk/callback
-  </code></pre>
-  
+
+</code></pre>
+
   <h3>Инструкция по запуску</h3>
   
   <p><b>1. Клонировать и настроить</b></p>
@@ -374,28 +375,32 @@ cp .env.example .env
 docker-compose up -d --build
 
 # Проверить логи
+
 docker-compose logs -f api
 
 # Выполнить миграции (автоматически при старте)</code></pre>
-  
+
   <p><b>3. Проверка работы</b></p>
   <pre><code># Health check
 curl http://localhost:4200/health
 
 # Регистрация
+
 curl -X POST http://localhost:4200/api/v1/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@test.com","password":"test123"}'
+ -H "Content-Type: application/json" \
+ -d '{"email":"test@test.com","password":"test123"}'
 
 # Логин
+
 curl -X POST http://localhost:4200/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@test.com","password":"test123"}' \
-  -c cookies.txt
+ -H "Content-Type: application/json" \
+ -d '{"email":"test@test.com","password":"test123"}' \
+ -c cookies.txt
 
 # Проверка whoami
+
 curl http://localhost:4200/api/v1/auth/whoami -b cookies.txt</code></pre>
-  
+
   <h3>Скриншоты работы (Lab 3)</h3>
   
   <h4>Регистрация нового пользователя</h4>
@@ -447,5 +452,195 @@ curl http://localhost:4200/api/v1/auth/whoami -b cookies.txt</code></pre>
     <li>Укажите правильные Redirect URIs</li>
     <li>Проверьте переменные окружения YANDEX_CLIENT_ID и др.</li>
   </ul>
+
+</details>
+
+<details open>
+  <summary><h2>Lab 5 - rugram-api (Redis Cache & Session Management)</h2></summary>
+  
+  <h3>Новый функционал</h3>
+  <ul>
+    <li><b>Redis Cache</b> - кеширование часто запрашиваемых данных</li>
+    <li><b>Умная инвалидация кеша</b> - автоматическое удаление при создании/обновлении/удалении</li>
+    <li><b>JTI (JWT ID) в Redis</b> - мгновенный отзыв access токенов при logout</li>
+    <li><b>Кеширование профилей пользователей</b> - снижение нагрузки на БД</li>
+    <li><b>Кеширование списков постов</b> - с учетом пагинации</li>
+    <li><b>TTL управление</b> - автоматическое удаление устаревших данных</li>
+    <li><b>Безопасное хранение</b> - только JTI, без паролей и чувствительных данных</li>
+  </ul>
+  
+  <h4>Структура ключей Redis</h4>
+  <pre><code># Посты
+rugram:posts:list:page:1:limit:10
+rugram:posts:user:{userId}:list:page:1:limit:10
+rugram:posts:item:{postId}
+
+# Пользователи
+
+rugram:users:profile:{userId}
+rugram:users:email:{email}
+rugram:users:list:page:1:limit:10
+
+# Сессии (JTI токенов)
+
+rugram:auth:user:{userId}:access:{jti}
+rugram:auth:user:{userId}:refresh:{jti}</code></pre>
+
+  <h4>Технологии</h4>
+  <ul>
+    <li><b>Redis 7 Alpine</b> - In-memory data store</li>
+    <li><b>go-redis/v9</b> - Redis клиент для Go</li>
+    <li><b>JWT with JTI</b> - Уникальные идентификаторы токенов</li>
+    <li><b>Cache-Aside стратегия</b> - Lazy loading кеша</li>
+  </ul>
+  
+  <h3>Примеры запросов с кешированием</h3>
+  
+  <h4>Проверка кеширования постов</h4>
+  <pre><code># Первый запрос - загрузит из БД и сохранит в кеш
+time curl -X GET "http://localhost:4200/api/v1/posts?page=1&limit=10" -b cookies.txt
+
+# Второй запрос - возьмет из Redis (должен быть быстрее)
+
+time curl -X GET "http://localhost:4200/api/v1/posts?page=1&limit=10" -b cookies.txt</code></pre>
+
+  <h4>Создание поста (инвалидация кеша)</h4>
+  <pre><code># После этого запроса кеш списков будет очищен
+curl -X POST http://localhost:4200/api/v1/posts \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "'"$USER_ID"'",
+    "title": "Новый пост",
+    "description": "Этот пост очистит кеш",
+    "status": "active"
+  }' \
+  -b cookies.txt</code></pre>
+  
+  <h4>Проверка отзыва токена через Redis</h4>
+  <pre><code># Логин и сохранение cookies
+curl -X POST http://localhost:4200/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","password":"SecurePass123"}' \
+  -c cookies.txt
+
+# Проверка whoami - работает
+
+curl http://localhost:4200/api/v1/auth/whoami -b cookies.txt
+
+# Выход - удаляет JTI из Redis
+
+curl -X POST http://localhost:4200/api/v1/auth/logout -b cookies.txt
+
+# Повторный запрос с тем же токеном - 401 Unauthorized
+
+curl http://localhost:4200/api/v1/auth/whoami -b cookies.txt</code></pre>
+
+  <h3>Redis CLI команды для проверки</h3>
+  
+  <pre><code># Подключение к Redis
+docker exec -it rugram_redis redis-cli -a redis_secure_password_change_in_prod
+
+# Просмотр всех ключей кеша
+
+KEYS rugram:\*
+
+# Просмотр содержимого кеша постов
+
+GET "rugram:posts:list:page:1:limit:10"
+
+# Проверка TTL (Time To Live)
+
+TTL "rugram:posts:list:page:1:limit:10"
+
+# Просмотр активных сессий (JTI токенов)
+
+KEYS "rugram:auth:user:_:access:_"
+
+# Ручная инвалидация кеша (для тестов)
+
+DEL "rugram:posts:list:page:1:limit:10"
+
+# Удаление всех ключей по паттерну
+
+redis-cli -a your_password KEYS "rugram:posts:\*" | xargs redis-cli -a your_password DEL
+
+# Мониторинг операций в реальном времени
+
+MONITOR</code></pre>
+
+  <h3>Скриншоты работы (Lab 5)</h3>
+  
+  <h4>Redis контейнер в Docker</h4>
+  <img src="./assets/lab5/redis-container.png" alt="Redis контейнер запущен" width="600"/>
+  
+  <h4>Ключи кеша в Redis</h4>
+  <img src="./assets/lab5/redis-keys.png" alt="Просмотр ключей через redis-cli" width="600"/>
+  
+  <h4>Кеширование списка постов</h4>
+  <img src="./assets/lab5/posts-cache.png" alt="Кешированный ответ постов" width="600"/>
+  
+  <h4>JTI токены в Redis (активные сессии)</h4>
+  <img src="./assets/lab5/jti-tokens.png" alt="JTI токены пользователя в Redis" width="600"/>
+  
+  <h4>Сравнение времени ответа (с/без кеша)</h4>
+  <img src="./assets/lab5/performance-comparison.png" alt="Сравнение производительности" width="600"/>
+  
+  <h4>Логи приложения с кешированием</h4>
+  <img src="./assets/lab5/cache-logs.png" alt="Логи показывают Cache HIT/MISS" width="600"/>
+  
+  <h3>Проверка работы кеша</h3>
+  
+  <p><b>1. Запустите приложение</b></p>
+  <pre><code>docker-compose up -d --build</code></pre>
+  
+  <p><b>2. Создайте тестовые данные</b></p>
+  <pre><code># Регистрация
+curl -X POST http://localhost:4200/api/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"cache@test.com","password":"test123"}'
+
+# Логин
+
+curl -X POST http://localhost:4200/api/v1/auth/login \
+ -H "Content-Type: application/json" \
+ -d '{"email":"cache@test.com","password":"test123"}' \
+ -c cookies.txt
+
+# Создайте несколько постов
+
+for i in {1..5}; do
+curl -X POST http://localhost:4200/api/v1/posts \
+ -H "Content-Type: application/json" \
+ -d "{\"user_id\":\"$USER_ID\",\"title\":\"Post $i\",\"status\":\"active\"}" \
+ -b cookies.txt
+done</code></pre>
+
+  <p><b>3. Проверьте Redis кеш</b></p>
+  <pre><code>docker exec -it rugram_redis redis-cli -a redis_secure_password_change_in_prod
+KEYS rugram:*
+GET "rugram:posts:list:page:1:limit:10"</code></pre>
+  
+  <h3>Полезные команды</h3>
+  
+  <pre><code>
+  # Посмотреть статистику Redis
+  docker exec -it rugram_redis redis-cli -a your_password INFO stats
+
+# Мониторинг запросов в реальном времени
+
+docker exec -it rugram_redis redis-cli -a your_password MONITOR
+
+# Очистить все кеши (только для тестов)
+
+docker exec -it rugram_redis redis-cli -a your_password FLUSHDB
+
+# Бэкап Redis данных
+
+docker exec rugram_redis redis-cli -a your_password SAVE
+
+# Просмотр логов приложения с фильтром по кешу
+
+docker logs rugram_api 2>&1 | grep -i cache
+</code></pre>
 
 </details>

@@ -1,9 +1,9 @@
 {
 	"info": {
-		"name": "RuGram API - Go Version",
-		"description": "RuGram API with JWT Authentication, OAuth2, and Session Management",
+		"name": "RuGram API - Go Version with Redis Cache",
+		"description": "RuGram API with JWT Authentication, OAuth2, Session Management, and Redis Caching",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-		"version": "2.0.0"
+		"version": "3.0.0"
 	},
 	"item": [
 		{
@@ -72,7 +72,7 @@
 					"response": []
 				},
 				{
-					"name": "Whoami (Get Current User)",
+					"name": "Whoami (Get Current User) - Cached",
 					"request": {
 						"method": "GET",
 						"header": [],
@@ -98,7 +98,7 @@
 					"response": []
 				},
 				{
-					"name": "Logout",
+					"name": "Logout (Revokes Access Token in Redis)",
 					"request": {
 						"method": "POST",
 						"header": [],
@@ -111,7 +111,7 @@
 					"response": []
 				},
 				{
-					"name": "Logout All Sessions",
+					"name": "Logout All Sessions (Revokes All Tokens)",
 					"request": {
 						"method": "POST",
 						"header": [],
@@ -157,10 +157,10 @@
 			]
 		},
 		{
-			"name": "Users",
+			"name": "Users (With Cache)",
 			"item": [
 				{
-					"name": "Get User by ID",
+					"name": "Get User by ID (Cached)",
 					"request": {
 						"method": "GET",
 						"header": [],
@@ -173,7 +173,7 @@
 					"response": []
 				},
 				{
-					"name": "Get User by Email",
+					"name": "Get User by Email (Cached)",
 					"request": {
 						"method": "GET",
 						"header": [],
@@ -186,7 +186,7 @@
 					"response": []
 				},
 				{
-					"name": "Get All Users",
+					"name": "Get All Users (Cached with Pagination)",
 					"request": {
 						"method": "GET",
 						"header": [],
@@ -209,7 +209,7 @@
 					"response": []
 				},
 				{
-					"name": "Update User",
+					"name": "Update User (Invalidates Cache)",
 					"request": {
 						"method": "PUT",
 						"header": [
@@ -231,7 +231,7 @@
 					"response": []
 				},
 				{
-					"name": "Patch User",
+					"name": "Patch User (Invalidates Cache)",
 					"request": {
 						"method": "PATCH",
 						"header": [
@@ -253,7 +253,7 @@
 					"response": []
 				},
 				{
-					"name": "Delete User",
+					"name": "Delete User (Invalidates Cache)",
 					"request": {
 						"method": "DELETE",
 						"header": [],
@@ -268,10 +268,10 @@
 			]
 		},
 		{
-			"name": "Posts",
+			"name": "Posts (With Redis Cache)",
 			"item": [
 				{
-					"name": "Create Post",
+					"name": "Create Post (Invalidates Cache)",
 					"request": {
 						"method": "POST",
 						"header": [
@@ -293,7 +293,7 @@
 					"response": []
 				},
 				{
-					"name": "Get All Posts",
+					"name": "Get All Posts (Cached - First Request)",
 					"request": {
 						"method": "GET",
 						"header": [],
@@ -316,7 +316,30 @@
 					"response": []
 				},
 				{
-					"name": "Get Post by ID",
+					"name": "Get All Posts (Cached - Second Request - Should be faster)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/posts?page=1&limit=10",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "posts"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Post by ID (Cached)",
 					"request": {
 						"method": "GET",
 						"header": [],
@@ -329,7 +352,7 @@
 					"response": []
 				},
 				{
-					"name": "Update Post",
+					"name": "Update Post (Invalidates Cache)",
 					"request": {
 						"method": "PUT",
 						"header": [
@@ -351,7 +374,7 @@
 					"response": []
 				},
 				{
-					"name": "Patch Post",
+					"name": "Patch Post (Invalidates Cache)",
 					"request": {
 						"method": "PATCH",
 						"header": [
@@ -373,7 +396,7 @@
 					"response": []
 				},
 				{
-					"name": "Delete Post",
+					"name": "Delete Post (Invalidates Cache)",
 					"request": {
 						"method": "DELETE",
 						"header": [],
@@ -386,7 +409,7 @@
 					"response": []
 				},
 				{
-					"name": "Get User Posts",
+					"name": "Get User Posts (Cached)",
 					"request": {
 						"method": "GET",
 						"header": [],
@@ -394,6 +417,80 @@
 							"raw": "{{base_url}}/api/v1/posts/user/{{user_id}}?page=1&limit=10",
 							"host": ["{{base_url}}"],
 							"path": ["api", "v1", "posts", "user", "{{user_id}}"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Redis Cache Testing",
+			"item": [
+				{
+					"name": "Test Cache Performance (Run Multiple Times)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/posts?page=1&limit=10",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "posts"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Test Different Pagination (New Cache Key)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/posts?page=2&limit=5",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "posts"],
+							"query": [
+								{
+									"key": "page",
+									"value": "2"
+								},
+								{
+									"key": "limit",
+									"value": "5"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Verify Cache Invalidation (Create then List)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/posts?page=1&limit=10",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "posts"],
 							"query": [
 								{
 									"key": "page",
@@ -460,6 +557,27 @@
 					"",
 					"if (refreshToken) {",
 					"    pm.environment.set('refresh_token', refreshToken);",
+					"}"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Test for cache performance",
+					"if (pm.response.code === 200) {",
+					"    const responseTime = pm.response.responseTime;",
+					"    console.log(`Response time: ${responseTime}ms`);",
+					"    ",
+					"    // Check if this is a cached response (indicated by header)",
+					"    const xCache = pm.response.headers.get('X-Cache');",
+					"    if (xCache === 'HIT') {",
+					"        console.log('✅ Response from Redis Cache!');",
+					"    } else {",
+					"        console.log('📡 Response from Database');",
+					"    }",
 					"}"
 				]
 			}
