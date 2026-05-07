@@ -645,13 +645,6 @@ docker logs rugram_api 2>&1 | grep -i cache
 
 </details>
 
-# Лабораторная работа №6 - Миграция на MongoDB
-
-## Выполнил: [Ваше имя]
-## Группа: [Ваша группа]
-
----
-
 <details open>
   <summary><h2>Lab 6 - rugram-api (MongoDB Migration)</h2></summary>
   
