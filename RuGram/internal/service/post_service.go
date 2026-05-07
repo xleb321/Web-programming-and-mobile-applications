@@ -1,7 +1,6 @@
 package service
 
 import (
-	"database/sql"
 	"errors"
 	"fmt"
 	"strconv"
@@ -11,7 +10,7 @@ import (
 	"rugram-api/internal/models"
 	"rugram-api/internal/repository"
 
-	"github.com/google/uuid"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type PostService struct {
@@ -26,34 +25,28 @@ func NewPostService(repo *repository.PostRepository, cacheSvc *cache.CacheServic
 	}
 }
 
-// buildListKey формирует ключ для кеша списка постов
 func (s *PostService) buildListKey(page, limit int) string {
 	return s.cacheSvc.BuildKey("posts", "list", "page", strconv.Itoa(page), "limit", strconv.Itoa(limit))
 }
 
-// buildUserListKey формирует ключ для кеша списка постов пользователя
 func (s *PostService) buildUserListKey(userID string, page, limit int) string {
 	return s.cacheSvc.BuildKey("posts", "user", userID, "list", "page", strconv.Itoa(page), "limit", strconv.Itoa(limit))
 }
 
-// buildItemKey формирует ключ для кеша отдельного поста
 func (s *PostService) buildItemKey(id string) string {
 	return s.cacheSvc.BuildKey("posts", "item", id)
 }
 
-// invalidateLists инвалидирует все кеши списков постов
 func (s *PostService) invalidateLists() {
 	pattern := s.cacheSvc.BuildKey("posts", "list", "*")
 	s.cacheSvc.DelByPattern(pattern)
 }
 
-// invalidateUserLists инвалидирует кеши списков постов конкретного пользователя
 func (s *PostService) invalidateUserLists(userID string) {
 	pattern := s.cacheSvc.BuildKey("posts", "user", userID, "list", "*")
 	s.cacheSvc.DelByPattern(pattern)
 }
 
-// invalidateItem инвалидирует кеш конкретного поста
 func (s *PostService) invalidateItem(id string) {
 	key := s.buildItemKey(id)
 	s.cacheSvc.Del(key)
@@ -78,7 +71,6 @@ func (s *PostService) Create(req *dto.CreatePostRequest) (*dto.PostResponse, err
 		return nil, fmt.Errorf("failed to create post: %w", err)
 	}
 
-	// Инвалидируем кеш списков (общие и пользовательские)
 	s.invalidateLists()
 	s.invalidateUserLists(req.UserID)
 
@@ -86,46 +78,30 @@ func (s *PostService) Create(req *dto.CreatePostRequest) (*dto.PostResponse, err
 }
 
 func (s *PostService) GetByID(id string) (*dto.PostResponse, error) {
-	// Проверяем кеш
 	cacheKey := s.buildItemKey(id)
 	var cachedPost dto.PostResponse
 	if err := s.cacheSvc.Get(cacheKey, &cachedPost); err == nil && cachedPost.ID != "" {
 		return &cachedPost, nil
 	}
 
-	postID, err := uuid.Parse(id)
-	if err != nil {
-		return nil, errors.New("invalid post ID format")
-	}
-
-	post, err := s.repo.FindByID(postID)
+	post, err := s.repo.FindByIDString(id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find post: %w", err)
 	}
-
 	if post == nil {
 		return nil, errors.New("post not found")
 	}
 
 	response := s.toResponse(post)
-
-	// Сохраняем в кеш
 	s.cacheSvc.SetWithDefaultTTL(cacheKey, response)
-
 	return response, nil
 }
 
 func (s *PostService) Update(id string, req *dto.UpdatePostRequest) (*dto.PostResponse, error) {
-	postID, err := uuid.Parse(id)
-	if err != nil {
-		return nil, errors.New("invalid post ID format")
-	}
-
-	post, err := s.repo.FindByID(postID)
+	post, err := s.repo.FindByIDString(id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find post: %w", err)
 	}
-
 	if post == nil {
 		return nil, errors.New("post not found")
 	}
@@ -150,7 +126,6 @@ func (s *PostService) Update(id string, req *dto.UpdatePostRequest) (*dto.PostRe
 		return nil, fmt.Errorf("failed to update post: %w", err)
 	}
 
-	// Инвалидируем кеш
 	s.invalidateItem(id)
 	s.invalidateLists()
 	s.invalidateUserLists(oldUserID)
@@ -162,31 +137,27 @@ func (s *PostService) Update(id string, req *dto.UpdatePostRequest) (*dto.PostRe
 }
 
 func (s *PostService) Delete(id string) error {
-	// Получаем пост перед удалением для инвалидации кеша пользователя
-	postID, err := uuid.Parse(id)
+	post, err := s.repo.FindByIDString(id)
+	if err != nil {
+		return fmt.Errorf("failed to find post: %w", err)
+	}
+	if post == nil {
+		return errors.New("post not found")
+	}
+
+	postID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return errors.New("invalid post ID format")
 	}
 
-	post, err := s.repo.FindByID(postID)
-	if err != nil && err != sql.ErrNoRows {
-		return fmt.Errorf("failed to find post: %w", err)
-	}
-
 	err = s.repo.SoftDelete(postID)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return errors.New("post not found")
-		}
 		return fmt.Errorf("failed to delete post: %w", err)
 	}
 
-	// Инвалидируем кеш
 	s.invalidateItem(id)
 	s.invalidateLists()
-	if post != nil {
-		s.invalidateUserLists(post.UserID)
-	}
+	s.invalidateUserLists(post.UserID)
 
 	return nil
 }
@@ -202,7 +173,6 @@ func (s *PostService) GetAll(page, limit int) (*dto.PaginationResponse, error) {
 		limit = 100
 	}
 
-	// Проверяем кеш
 	cacheKey := s.buildListKey(page, limit)
 	var cachedResult dto.PaginationResponse
 	if err := s.cacheSvc.Get(cacheKey, &cachedResult); err == nil && cachedResult.Data != nil {
@@ -210,7 +180,6 @@ func (s *PostService) GetAll(page, limit int) (*dto.PaginationResponse, error) {
 	}
 
 	offset := (page - 1) * limit
-
 	posts, total, err := s.repo.FindAll(limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get posts: %w", err)
@@ -233,9 +202,7 @@ func (s *PostService) GetAll(page, limit int) (*dto.PaginationResponse, error) {
 		},
 	}
 
-	// Сохраняем в кеш
 	s.cacheSvc.SetWithDefaultTTL(cacheKey, result)
-
 	return result, nil
 }
 
@@ -250,7 +217,6 @@ func (s *PostService) GetByUserID(userID string, page, limit int) (*dto.Paginati
 		limit = 100
 	}
 
-	// Проверяем кеш
 	cacheKey := s.buildUserListKey(userID, page, limit)
 	var cachedResult dto.PaginationResponse
 	if err := s.cacheSvc.Get(cacheKey, &cachedResult); err == nil && cachedResult.Data != nil {
@@ -258,7 +224,6 @@ func (s *PostService) GetByUserID(userID string, page, limit int) (*dto.Paginati
 	}
 
 	offset := (page - 1) * limit
-
 	posts, total, err := s.repo.FindByUserID(userID, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user posts: %w", err)
@@ -281,15 +246,13 @@ func (s *PostService) GetByUserID(userID string, page, limit int) (*dto.Paginati
 		},
 	}
 
-	// Сохраняем в кеш
 	s.cacheSvc.SetWithDefaultTTL(cacheKey, result)
-
 	return result, nil
 }
 
 func (s *PostService) toResponse(post *models.Post) *dto.PostResponse {
 	return &dto.PostResponse{
-		ID:          post.ID.String(),
+		ID:          post.GetID(),
 		UserID:      post.UserID,
 		Title:       post.Title,
 		Description: post.Description,

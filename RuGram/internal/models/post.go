@@ -3,22 +3,22 @@ package models
 import (
 	"time"
 
-	"github.com/google/uuid"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type Post struct {
-    ID          uuid.UUID  `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-    UserID      string     `json:"user_id" gorm:"not null;index"`
-    Title       string     `json:"title" gorm:"not null;size:200"`
-    Description string     `json:"description" gorm:"type:text"`
-    ImageURL    string     `json:"image_url" gorm:"size:500"`
-    Status      string     `json:"status" gorm:"default:'active';size:20"`
-    LikesCount  int        `json:"likes_count" gorm:"default:0"`
-    CreatedAt   time.Time  `json:"created_at" gorm:"autoCreateTime"`
-    UpdatedAt   time.Time  `json:"updated_at" gorm:"autoUpdateTime"`
-    DeletedAt   *time.Time `json:"deleted_at,omitempty" gorm:"index"`
+	ID          primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	UserID      string             `json:"user_id" bson:"user_id"`
+	Title       string             `json:"title" bson:"title"`
+	Description string             `json:"description" bson:"description"`
+	ImageURL    string             `json:"image_url" bson:"image_url"`
+	Status      string             `json:"status" bson:"status"`
+	LikesCount  int                `json:"likes_count" bson:"likes_count"`
+	CreatedAt   time.Time          `json:"created_at" bson:"created_at"`
+	UpdatedAt   time.Time          `json:"updated_at" bson:"updated_at"`
+	DeletedAt   *time.Time         `json:"deleted_at,omitempty" bson:"deleted_at,omitempty"`
 }
 
-func (Post) TableName() string {
-    return "posts"
+func (p *Post) GetID() string {
+	return p.ID.Hex()
 }

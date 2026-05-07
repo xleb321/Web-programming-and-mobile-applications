@@ -1,30 +1,49 @@
 version: '3.8'
 
 services:
-  postgres:
-    image: postgres:16
-    container_name: rugram_db
+  mongo:
+    image: mongo:6
+    container_name: rugram_mongo
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${DB_USER:-rugram_user}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-rugram_password}
-      POSTGRES_DB: ${DB_NAME:-rugram_db}
+      MONGO_INITDB_ROOT_USERNAME: ${DB_USER:-rugram_user}
+      MONGO_INITDB_ROOT_PASSWORD: ${DB_PASSWORD:-rugram_password}
     ports:
-      - '5432:5432'
+      - '27017:27017'
     volumes:
-      - rugram_postgres_data:/var/lib/postgresql/data
+      - rugram_mongo_data:/data/db
     networks:
       - rugram_network
     healthcheck:
-      test:
-        [
-          'CMD-SHELL',
-          'pg_isready -U ${DB_USER:-rugram_user} -d ${DB_NAME:-rugram_db}',
-        ]
+      test: ['CMD', 'mongosh', '--eval', "db.adminCommand('ping')"]
       interval: 10s
       timeout: 5s
       retries: 10
       start_period: 10s
+
+  mongo-express:
+    image: mongo-express:latest
+    container_name: rugram_mongo_express
+    restart: unless-stopped
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${DB_USER:-rugram_user}
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${DB_PASSWORD:-rugram_password}
+      ME_CONFIG_MONGODB_SERVER: mongo
+      ME_CONFIG_MONGODB_PORT: 27017
+      ME_CONFIG_MONGODB_AUTH_DATABASE: admin
+      ME_CONFIG_BASICAUTH_USERNAME: admin
+      ME_CONFIG_BASICAUTH_PASSWORD: admin_password
+    ports:
+      - '8081:8081'
+    networks:
+      - rugram_network
+    depends_on:
+      - mongo
+    healthcheck:
+      test: ['CMD', 'wget', '--spider', 'http://localhost:8081']
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   redis:
     image: redis:7-alpine
@@ -38,8 +57,7 @@ services:
       - rugram_network
     command: redis-server --requirepass ${REDIS_PASSWORD:-redis_password} --appendonly yes
     healthcheck:
-      test:
-        ['CMD', 'redis-cli', '-a', '${REDIS_PASSWORD:-redis_password}', 'ping']
+      test: ['CMD', 'redis-cli', '-a', '${REDIS_PASSWORD:-redis_password}', 'ping']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -50,10 +68,7 @@ services:
     container_name: rugram_api
     restart: unless-stopped
     environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USER: ${DB_USER:-rugram_user}
-      DB_PASSWORD: ${DB_PASSWORD:-rugram_password}
+      MONGO_URI: ${MONGO_URI:-mongodb://rugram_user:rugram_password@mongo:27017/rugram_db?authSource=admin}
       DB_NAME: ${DB_NAME:-rugram_db}
       APP_PORT: ${APP_PORT:-4200}
       APP_ENV: ${APP_ENV:-development}
@@ -63,34 +78,26 @@ services:
       CACHE_TTL_DEFAULT: ${CACHE_TTL_DEFAULT:-300}
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-default_access_secret}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-default_refresh_secret}
+      YANDEX_CLIENT_ID: ${YANDEX_CLIENT_ID:-}
+      YANDEX_CLIENT_SECRET: ${YANDEX_CLIENT_SECRET:-}
+      YANDEX_REDIRECT_URI: ${YANDEX_REDIRECT_URI:-}
+      VK_CLIENT_ID: ${VK_CLIENT_ID:-}
+      VK_CLIENT_SECRET: ${VK_CLIENT_SECRET:-}
+      VK_REDIRECT_URI: ${VK_REDIRECT_URI:-}
     ports:
       - '${APP_PORT:-4200}:${APP_PORT:-4200}'
     depends_on:
-      postgres:
+      mongo:
         condition: service_healthy
       redis:
         condition: service_healthy
+      mongo-express:
+        condition: service_started
     networks:
       - rugram_network
-    volumes:
-      - ./internal/database/migrations:/app/internal/database/migrations
-
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: rugram_pgadmin
-    restart: unless-stopped
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@example.com
-      PGADMIN_DEFAULT_PASSWORD: admin_password
-    ports:
-      - '5050:80'
-    networks:
-      - rugram_network
-    depends_on:
-      - postgres
 
 volumes:
-  rugram_postgres_data:
+  rugram_mongo_data:
   rugram_redis_data:
 
 networks:

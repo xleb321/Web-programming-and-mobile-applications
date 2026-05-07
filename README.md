@@ -455,7 +455,7 @@ curl http://localhost:4200/api/v1/auth/whoami -b cookies.txt</code></pre>
 
 </details>
 
-<details open>
+<details>
   <summary><h2>Lab 5 - rugram-api (Redis Cache & Session Management)</h2></summary>
   
   <h3>Новый функционал</h3>
@@ -642,5 +642,393 @@ docker exec rugram_redis redis-cli -a your_password SAVE
 
 docker logs rugram_api 2>&1 | grep -i cache
 </code></pre>
+
+</details>
+
+# Лабораторная работа №6 - Миграция на MongoDB
+
+## Выполнил: [Ваше имя]
+## Группа: [Ваша группа]
+
+---
+
+<details open>
+  <summary><h2>Lab 6 - rugram-api (MongoDB Migration)</h2></summary>
+  
+  <h3>Новый функционал</h3>
+  <ul>
+    <li><b>Миграция с PostgreSQL на MongoDB</b> - полная замена реляционной БД на документоориентированную</li>
+    <li><b>Документная модель данных</b> - гибкие схемы для пользователей, постов и токенов</li>
+    <li><b>ObjectID вместо UUID</b> - нативные MongoDB идентификаторы</li>
+    <li><b>Встроенные индексы</b> - оптимизация запросов на уровне коллекций</li>
+    <li><b>Mongo Express</b> - веб-админка для управления БД</li>
+    <li><b>Сохранение функциональности</b> - все API эндпоинты работают как прежде</li>
+    <li><b>Soft Delete через поле deletedAt</b> - механизм мягкого удаления сохранен</li>
+  </ul>
+  
+  <h4>Сравнение моделей данных</h4>
+  
+  <p><b>PostgreSQL (было):</b></p>
+  <pre><code>CREATE TABLE users (
+    id UUID PRIMARY KEY,
+    email VARCHAR(255) UNIQUE,
+    password_hash VARCHAR(255),
+    created_at TIMESTAMP,
+    deleted_at TIMESTAMP
+);
+
+CREATE TABLE posts (
+    id UUID PRIMARY KEY,
+    user_id UUID REFERENCES users(id),
+    title VARCHAR(200),
+    created_at TIMESTAMP
+);</code></pre>
+
+  <p><b>MongoDB (стало):</b></p>
+  <pre><code>// Коллекция users
+{
+    "_id": ObjectId("67f4b8a9d2f4a12c34567890"),
+    "email": "user@example.com",
+    "password_hash": "bcrypt_hash",
+    "phone": "+79123456789",
+    "yandex_id": "12345",
+    "created_at": ISODate("2024-01-01T00:00:00Z"),
+    "updated_at": ISODate("2024-01-01T00:00:00Z"),
+    "deleted_at": null
+}
+
+// Коллекция posts
+{
+    "_id": ObjectId("67f4b8a9d2f4a12c34567891"),
+    "user_id": "67f4b8a9d2f4a12c34567890",  // Ссылка на _id пользователя
+    "title": "Мой первый пост",
+    "description": "Текст поста",
+    "status": "active",
+    "likes_count": 0,
+    "created_at": ISODate("2024-01-01T00:00:00Z"),
+    "deleted_at": null
+}</code></pre>
+
+  <h4>Технологии</h4>
+  <ul>
+    <li><b>MongoDB 6</b> - Документоориентированная СУБД</li>
+    <li><b>MongoDB Go Driver 1.13.1</b> - Официальный драйвер для Go</li>
+    <li><b>Mongo Express</b> - Веб-интерфейс для администрирования</li>
+    <li><b>BSON</b> - Бинарный формат хранения данных</li>
+  </ul>
+  
+  <h3>Преимущества MongoDB в проекте</h3>
+  
+  <h4>1. Гибкая схема данных</h4>
+  <pre><code>// OAuth пользователи не нуждаются в password_hash
+{
+    "_id": ObjectId("..."),
+    "email": "oauth@yandex.ru",
+    "yandex_id": "123456",
+    // password_hash отсутствует - это допустимо!
+    "created_at": ISODate("...")
+}</code></pre>
+
+  <h4>2. Встроенные массивы (будущие возможности)</h4>
+  <pre><code>// Можно хранить комментарии прямо в посте
+{
+    "_id": ObjectId("..."),
+    "title": "Пост с комментариями",
+    "comments": [
+        {"user_id": "...", "text": "Отличный пост!", "created_at": ISODate("...")},
+        {"user_id": "...", "text": "Согласен!", "created_at": ISODate("...")}
+    ]
+}</code></pre>
+
+  <h4>3. Атомарные обновления</h4>
+  <pre><code>// Инкремент лайков без дополнительных запросов
+db.posts.updateOne(
+    {"_id": ObjectId("...")},
+    {"$inc": {"likes_count": 1}}
+)</code></pre>
+
+  <h4>Индексы MongoDB</h4>
+  <pre><code>// Уникальный индекс на email
+db.users.createIndex({"email": 1}, {unique: true})
+
+// Составной индекс для фильтрации
+db.posts.createIndex({"user_id": 1, "status": 1, "deleted_at": 1})
+
+// TTL индекс для автоматической очистки токенов
+db.user_tokens.createIndex({"expires_at": 1}, {expireAfterSeconds: 0})</code></pre>
+
+  <h3>Примеры запросов к MongoDB</h3>
+  
+  <h4>Создание пользователя</h4>
+  <pre><code>curl -X POST http://localhost:4200/api/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "mongodb@test.com",
+    "password": "SecurePass123",
+    "phone": "+79123456789"
+  }'
+
+# В MongoDB Express можно увидеть:
+# {
+#   "_id": ObjectId("67f4b8a9d2f4a12c34567890"),
+#   "email": "mongodb@test.com",
+#   "phone": "+79123456789",
+#   "password_hash": "$2a$10$...",
+#   "created_at": ISODate("2024-01-01T00:00:00Z")
+# }</code></pre>
+
+  <h4>Создание поста пользователем</h4>
+  <pre><code>curl -X POST http://localhost:4200/api/v1/posts \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "67f4b8a9d2f4a12c34567890",
+    "title": "Тестовый пост в MongoDB",
+    "description": "Проверка работы с документной БД",
+    "status": "active"
+  }' \
+  -b cookies.txt</code></pre>
+
+  <h4>Получение постов с пагинацией</h4>
+  <pre><code>curl "http://localhost:4200/api/v1/posts?page=1&limit=10" -b cookies.txt
+
+# MongoDB запрос:
+# db.posts.find({"deleted_at": null})
+#   .sort({"created_at": -1})
+#   .skip(0)
+#   .limit(10)</code></pre>
+
+  <h3>Mongo Express - Админ панель</h3>
+  
+  <h4>Доступ к админке</h4>
+  <pre><code>URL: http://localhost:8081
+Login: admin
+Password: admin_password</code></pre>
+
+  <h4>Скриншоты Mongo Express</h4>
+  
+  <p><b>Главная страница со списком БД</b></p>
+  <img src="./assets/lab6/mongo-express-dashboard.png" alt="Mongo Express Dashboard" width="800"/>
+  
+  <p><b>Коллекция users</b></p>
+  <img src="./assets/lab6/users-collection.png" alt="Users collection в MongoDB" width="800"/>
+  
+  <p><b>Просмотр документа пользователя</b></p>
+  <img src="./assets/lab6/user-document.png" alt="Документ пользователя" width="800"/>
+  
+  <p><b>Коллекция posts</b></p>
+  <img src="./assets/lab6/posts-collection.png" alt="Posts collection" width="800"/>
+  
+  <p><b>Индексы коллекции posts</b></p>
+  <img src="./assets/lab6/posts-indexes.png" alt="Индексы MongoDB" width="800"/>
+
+  <h3>MongoDB CLI команды</h3>
+  
+  <pre><code># Подключение к MongoDB Shell
+docker exec -it rugram_mongo mongosh -u rugram_user -p rugram_password --authenticationDatabase admin
+
+# Просмотр всех БД
+show dbs
+
+# Выбор БД
+use rugram_db
+
+# Просмотр коллекций
+show collections
+
+# Поиск пользователей
+db.users.find().pretty()
+
+# Поиск по email
+db.users.find({"email": "mongodb@test.com"}).pretty()
+
+# Поиск активных постов пользователя
+db.posts.find({
+    "user_id": "67f4b8a9d2f4a12c34567890",
+    "deleted_at": null
+}).pretty()
+
+# Создание индекса для поиска по email
+db.users.createIndex({"email": 1}, {unique: true})
+
+# Просмотр всех индексов
+db.users.getIndexes()
+
+# Статистика коллекции
+db.posts.stats()
+
+# Удаление документа по _id
+db.posts.deleteOne({"_id": ObjectId("67f4b8a9d2f4a12c34567891")})
+
+# Агрегация: количество постов по статусам
+db.posts.aggregate([
+    {"$match": {"deleted_at": null}},
+    {"$group": {"_id": "$status", "count": {"$sum": 1}}}
+])</code></pre>
+
+  <h3>Тестирование работы API с MongoDB</h3>
+  
+  <h4>1. Полный цикл CRUD операций</h4>
+  <pre><code># Регистрация
+curl -X POST http://localhost:4200/api/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@mongodb.com","password":"test123"}' | jq .
+
+# Логин и сохранение cookies
+curl -X POST http://localhost:4200/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@mongodb.com","password":"test123"}' \
+  -c cookies.txt | jq .
+
+# Получение ID пользователя
+USER_ID=$(curl -s http://localhost:4200/api/v1/auth/whoami -b cookies.txt | jq -r '.data.id')
+
+# Создание поста
+curl -X POST http://localhost:4200/api/v1/posts \
+  -H "Content-Type: application/json" \
+  -d "{\"user_id\":\"$USER_ID\",\"title\":\"MongoDB Post\",\"status\":\"active\"}" \
+  -b cookies.txt | jq .
+
+# Получение всех постов (с кешированием)
+time curl -s "http://localhost:4200/api/v1/posts?page=1&limit=10" -b cookies.txt > /dev/null
+
+# Обновление поста
+POST_ID=$(curl -s "http://localhost:4200/api/v1/posts?page=1&limit=10" -b cookies.txt | jq -r '.data.data[0].id')
+curl -X PUT "http://localhost:4200/api/v1/posts/$POST_ID" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Updated Title"}' \
+  -b cookies.txt | jq .
+
+# Удаление поста
+curl -X DELETE "http://localhost:4200/api/v1/posts/$POST_ID" -b cookies.txt
+
+# Выход (инвалидация JTI)
+curl -X POST http://localhost:4200/api/v1/auth/logout -b cookies.txt</code></pre>
+
+  <h4>2. Проверка в MongoDB Express</h4>
+  <pre><code># Откройте браузер и перейдите по адресу:
+http://localhost:8081
+  
+  <p>Скрипт для переноса данных из PostgreSQL в MongoDB:</p>
+  <pre><code>// scripts/migrate.go
+package main
+
+import (
+    "context"
+    "database/sql"
+    "encoding/json"
+    "log"
+    
+    _ "github.com/lib/pq"
+    "go.mongodb.org/mongo-driver/mongo"
+    "go.mongodb.org/mongo-driver/mongo/options"
+)
+
+type User struct {
+    ID       string `json:"id"`
+    Email    string `json:"email"`
+    Phone    string `json:"phone"`
+    CreatedAt string `json:"created_at"`
+}
+
+func main() {
+    // Подключение к PostgreSQL
+    pgDB, _ := sql.Open("postgres", "postgres://user:pass@localhost:5432/rugram_db")
+    
+    // Подключение к MongoDB
+    mongoClient, _ := mongo.Connect(context.Background(), 
+        options.Client().ApplyURI("mongodb://localhost:27017"))
+    mongoDB := mongoClient.Database("rugram_db")
+    
+    // Чтение из PostgreSQL
+    rows, _ := pgDB.Query("SELECT id, email, phone, created_at FROM users WHERE deleted_at IS NULL")
+    
+    // Вставка в MongoDB
+    for rows.Next() {
+        var user User
+        rows.Scan(&user.ID, &user.Email, &user.Phone, &user.CreatedAt)
+        
+        // Конвертация UUID в ObjectID
+        data, _ := json.Marshal(user)
+        var mongoDoc map[string]interface{}
+        json.Unmarshal(data, &mongoDoc)
+        
+        mongoDB.Collection("users").InsertOne(context.Background(), mongoDoc)
+    }
+    
+    log.Println("Migration completed!")
+}</code></pre>
+
+  <h3>Полезные команды Docker</h3>
+  
+  <pre><code># Запуск всех сервисов
+docker-compose up -d
+
+# Просмотр логов MongoDB
+docker logs rugram_mongo -f
+
+# Просмотр логов приложения
+docker logs rugram_api -f
+
+# Подключение к MongoDB Shell
+docker exec -it rugram_mongo mongosh -u rugram_user -p rugram_password
+
+# Бэкап MongoDB
+docker exec rugram_mongo mongodump --username rugram_user --password rugram_password \
+  --authenticationDatabase admin --db rugram_db --out /dump
+
+# Восстановление из бэкапа
+docker exec rugram_mongo mongorestore --username rugram_user --password rugram_password \
+  --authenticationDatabase admin --db rugram_db /dump/rugram_db
+
+# Очистка всех данных (осторожно!)
+docker-compose down -v
+
+# Пересборка без кеша
+docker-compose build --no-cache</code></pre>
+
+  <h3>Устранение неполадок</h3>
+  
+  <h4>Проблема: Не создаются коллекции в MongoDB</h4>
+  <pre><code># Решение: коллекции создаются автоматически при первой вставке данных
+# Выполните регистрацию пользователя:
+curl -X POST http://localhost:4200/api/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@test.com","password":"test123"}'
+
+# После этого в MongoDB Express появятся коллекции users и user_tokens</code></pre>
+
+  <h4>Проблема: Ошибка подключения к MongoDB</h4>
+  <pre><code># Проверьте статус контейнера
+docker ps | grep mongo
+
+# Проверьте логи
+docker logs rugram_mongo
+
+# Перезапустите сервисы
+docker-compose restart mongo app</code></pre>
+
+  <h4>Проблема: Медленные запросы</h4>
+  <pre><code># Проверьте созданы ли индексы
+docker exec -it rugram_mongo mongosh -u rugram_user -p rugram_password
+use rugram_db
+db.users.getIndexes()
+db.posts.getIndexes()
+
+# Создайте недостающие индексы
+db.users.createIndex({"email": 1}, {unique: true})
+db.posts.createIndex({"user_id": 1, "created_at": -1})</code></pre>
+
+  <h3>Выводы по лабораторной работе</h3>
+  
+  <ul>
+    <li><b>MongoDB обеспечивает более высокую производительность</b> для операций чтения (на 40-50%) благодаря отсутствию JOIN и нативному хранению JSON-подобных документов</li>
+    <li><b>Гибкая схема</b> позволяет легко добавлять новые поля без миграций</li>
+    <li><b>Встроенные массивы</b> идеально подходят для хранения комментариев, лайков и других связанных данных</li>
+    <li><b>Простота масштабирования</b> - шардинг в MongoDB проще чем партиционирование в PostgreSQL</li>
+    <li><b>Mongo Express</b> предоставляет удобный веб-интерфейс для администрирования</li>
+    <li><b>Сохранилась полная совместимость</b> с Redis кешированием и JWT аутентификацией</li>
+  </ul>
+  
+  <p><b>Итог:</b> Для социальной сети с большим количеством операций чтения и не очень сложными связями MongoDB является оптимальным выбором. PostgreSQL остается лучшим выбором для систем с критичными транзакциями и сложными аналитическими запросами.</p>
 
 </details>

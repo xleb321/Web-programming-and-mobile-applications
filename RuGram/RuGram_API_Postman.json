@@ -1,586 +1,745 @@
 {
-	"info": {
-		"name": "RuGram API - Go Version with Redis Cache",
-		"description": "RuGram API with JWT Authentication, OAuth2, Session Management, and Redis Caching",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-		"version": "3.0.0"
-	},
-	"item": [
-		{
-			"name": "Health Check",
-			"item": [
-				{
-					"name": "Check API Health",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/health",
-							"host": ["{{base_url}}"],
-							"path": ["health"]
-						}
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "Authentication",
-			"item": [
-				{
-					"name": "Register User",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"SecurePass123\",\n  \"phone\": \"+79991234567\"\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/api/v1/auth/register",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "auth", "register"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Login",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"SecurePass123\"\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/api/v1/auth/login",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "auth", "login"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Whoami (Get Current User) - Cached",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/v1/auth/whoami",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "auth", "whoami"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Refresh Tokens",
-					"request": {
-						"method": "POST",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/v1/auth/refresh",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "auth", "refresh"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Logout (Revokes Access Token in Redis)",
-					"request": {
-						"method": "POST",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/v1/auth/logout",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "auth", "logout"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Logout All Sessions (Revokes All Tokens)",
-					"request": {
-						"method": "POST",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/v1/auth/logout-all",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "auth", "logout-all"]
-						}
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "OAuth",
-			"item": [
-				{
-					"name": "Yandex OAuth - Initiate",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/v1/auth/oauth/yandex",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "auth", "oauth", "yandex"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "VK OAuth - Initiate",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/v1/auth/oauth/vk",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "auth", "oauth", "vk"]
-						}
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "Users (With Cache)",
-			"item": [
-				{
-					"name": "Get User by ID (Cached)",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/v1/users/{{user_id}}",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "users", "{{user_id}}"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get User by Email (Cached)",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/v1/users/email/{{user_email}}",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "users", "email", "{{user_email}}"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get All Users (Cached with Pagination)",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/v1/users?page=1&limit=10",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "users"],
-							"query": [
-								{
-									"key": "page",
-									"value": "1"
-								},
-								{
-									"key": "limit",
-									"value": "10"
-								}
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Update User (Invalidates Cache)",
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"email\": \"newemail@example.com\",\n  \"phone\": \"+79998887766\",\n  \"password\": \"NewSecurePass456\"\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/api/v1/users/{{user_id}}",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "users", "{{user_id}}"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Patch User (Invalidates Cache)",
-					"request": {
-						"method": "PATCH",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"phone\": \"+79991112233\"\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/api/v1/users/{{user_id}}",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "users", "{{user_id}}"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Delete User (Invalidates Cache)",
-					"request": {
-						"method": "DELETE",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/v1/users/{{user_id}}",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "users", "{{user_id}}"]
-						}
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "Posts (With Redis Cache)",
-			"item": [
-				{
-					"name": "Create Post (Invalidates Cache)",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"user_id\": \"{{user_id}}\",\n  \"title\": \"Мой первый пост в RuGram\",\n  \"description\": \"Привет, мир! Это мой первый пост в новой социальной сети.\",\n  \"image_url\": \"https://images.unsplash.com/photo-1516245834210-c4c142785335\",\n  \"status\": \"active\"\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/api/v1/posts",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "posts"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get All Posts (Cached - First Request)",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/v1/posts?page=1&limit=10",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "posts"],
-							"query": [
-								{
-									"key": "page",
-									"value": "1"
-								},
-								{
-									"key": "limit",
-									"value": "10"
-								}
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get All Posts (Cached - Second Request - Should be faster)",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/v1/posts?page=1&limit=10",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "posts"],
-							"query": [
-								{
-									"key": "page",
-									"value": "1"
-								},
-								{
-									"key": "limit",
-									"value": "10"
-								}
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get Post by ID (Cached)",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/v1/posts/{{post_id}}",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "posts", "{{post_id}}"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Update Post (Invalidates Cache)",
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"title\": \"Обновленный заголовок поста\",\n  \"description\": \"Полностью обновленное описание\",\n  \"image_url\": \"https://example.com/new-photo.jpg\",\n  \"status\": \"active\"\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/api/v1/posts/{{post_id}}",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "posts", "{{post_id}}"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Patch Post (Invalidates Cache)",
-					"request": {
-						"method": "PATCH",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"title\": \"Новый заголовок\",\n  \"status\": \"draft\"\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/api/v1/posts/{{post_id}}",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "posts", "{{post_id}}"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Delete Post (Invalidates Cache)",
-					"request": {
-						"method": "DELETE",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/v1/posts/{{post_id}}",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "posts", "{{post_id}}"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get User Posts (Cached)",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/v1/posts/user/{{user_id}}?page=1&limit=10",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "posts", "user", "{{user_id}}"],
-							"query": [
-								{
-									"key": "page",
-									"value": "1"
-								},
-								{
-									"key": "limit",
-									"value": "10"
-								}
-							]
-						}
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "Redis Cache Testing",
-			"item": [
-				{
-					"name": "Test Cache Performance (Run Multiple Times)",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/v1/posts?page=1&limit=10",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "posts"],
-							"query": [
-								{
-									"key": "page",
-									"value": "1"
-								},
-								{
-									"key": "limit",
-									"value": "10"
-								}
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Test Different Pagination (New Cache Key)",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/v1/posts?page=2&limit=5",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "posts"],
-							"query": [
-								{
-									"key": "page",
-									"value": "2"
-								},
-								{
-									"key": "limit",
-									"value": "5"
-								}
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Verify Cache Invalidation (Create then List)",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/v1/posts?page=1&limit=10",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "posts"],
-							"query": [
-								{
-									"key": "page",
-									"value": "1"
-								},
-								{
-									"key": "limit",
-									"value": "10"
-								}
-							]
-						}
-					},
-					"response": []
-				}
-			]
-		}
-	],
-	"variable": [
-		{
-			"key": "base_url",
-			"value": "http://localhost:4200",
-			"type": "string"
-		},
-		{
-			"key": "user_id",
-			"value": "",
-			"type": "string"
-		},
-		{
-			"key": "user_email",
-			"value": "test@example.com",
-			"type": "string"
-		},
-		{
-			"key": "post_id",
-			"value": "",
-			"type": "string"
-		}
-	],
-	"auth": {
-		"type": "bearer",
-		"bearer": [
-			{
-				"key": "token",
-				"value": "{{access_token}}",
-				"type": "string"
-			}
-		]
-	},
-	"event": [
-		{
-			"listen": "prerequest",
-			"script": {
-				"type": "text/javascript",
-				"exec": [
-					"// Get cookies from response and store them",
-					"const cookieJar = pm.cookies;",
-					"const accessToken = cookieJar.get('access_token');",
-					"const refreshToken = cookieJar.get('refresh_token');",
-					"",
-					"if (accessToken) {",
-					"    pm.environment.set('access_token', accessToken);",
-					"}",
-					"",
-					"if (refreshToken) {",
-					"    pm.environment.set('refresh_token', refreshToken);",
-					"}"
-				]
-			}
-		},
-		{
-			"listen": "test",
-			"script": {
-				"type": "text/javascript",
-				"exec": [
-					"// Test for cache performance",
-					"if (pm.response.code === 200) {",
-					"    const responseTime = pm.response.responseTime;",
-					"    console.log(`Response time: ${responseTime}ms`);",
-					"    ",
-					"    // Check if this is a cached response (indicated by header)",
-					"    const xCache = pm.response.headers.get('X-Cache');",
-					"    if (xCache === 'HIT') {",
-					"        console.log('✅ Response from Redis Cache!');",
-					"    } else {",
-					"        console.log('📡 Response from Database');",
-					"    }",
-					"}"
-				]
-			}
-		}
-	]
+  "info": {
+    "name": "RuGram API - MongoDB Version with Redis Cache",
+    "description": "RuGram API with JWT Authentication, OAuth2, Session Management, Redis Caching, and MongoDB Database\n\n📚 Лабораторная работа №6 - Миграция на MongoDB\n\n⭐ Особенности:\n- MongoDB 6 (документоориентированная БД)\n- Redis 7 (кеширование и сессии)\n- JWT с JTI для отзыва токенов\n- OAuth2 (Яндекс, ВКонтакте)\n- Soft delete через поле deleted_at\n- Пагинация и кеширование\n\n🔧 Переменные окружения:\n- base_url: http://localhost:4200\n- user_id: ID пользователя (ObjectId из MongoDB)\n- post_id: ID поста (ObjectId из MongoDB)\n- mongo_express_url: http://localhost:8081 (админка MongoDB)\n\n📦 Технологии:\n- MongoDB Go Driver 1.13.1\n- go-redis/v9\n- gin-gonic/gin\n- golang-jwt/jwt\n\n🔗 Полезные ссылки:\n- API Docs: http://localhost:4200/swagger/index.html\n- MongoDB Express: http://localhost:8081 (admin/admin_password)\n- Redis Commander: http://localhost:8082 (если установлен)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "4.0.0"
+  },
+  "item": [
+    {
+      "name": "🏥 Health Check",
+      "item": [
+        {
+          "name": "Check API Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🔐 Authentication (MongoDB Users)",
+      "item": [
+        {
+          "name": "1️⃣ Register New User (Creates MongoDB Document)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.data && response.data.id) {",
+                  "        pm.environment.set('user_id', response.data.id);",
+                  "        pm.environment.set('user_email', response.data.email);",
+                  "        console.log('✅ User created with ID:', response.data.id);",
+                  "        console.log('📝 MongoDB ObjectId:', response.data.id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"mongodb_user_{{$timestamp}}@example.com\",\n  \"password\": \"SecurePass123\",\n  \"phone\": \"+7{{$randomInt}}{{$randomInt}}{{$randomInt}}{{$randomInt}}{{$randomInt}}{{$randomInt}}{{$randomInt}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "register"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "2️⃣ Login (Creates Session in Redis & Token in MongoDB)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.data && response.data.user) {",
+                  "        pm.environment.set('user_id', response.data.user.id);",
+                  "        console.log('✅ Logged in as:', response.data.user.email);",
+                  "        console.log('📝 MongoDB User ID:', response.data.user.id);",
+                  "    }",
+                  "    ",
+                  "    // Get cookies",
+                  "    const cookieJar = pm.cookies;",
+                  "    const accessToken = cookieJar.get('access_token');",
+                  "    if (accessToken) {",
+                  "        console.log('🎫 Access token stored in cookie');",
+                  "        console.log('🔑 JTI будет храниться в Redis для отзыва');",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{user_email}}\",\n  \"password\": \"SecurePass123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "login"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "3️⃣ Get Current User (Whoami) - From MongoDB",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/whoami",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "whoami"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "4️⃣ Refresh Tokens (Creates New JTI in Redis)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/refresh",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "refresh"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "5️⃣ Logout (Revokes JTI from Redis - Instant Token Invalidation)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/logout",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "logout"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "6️⃣ Logout All Sessions (Revokes All MongoDB Tokens & Redis Keys)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/logout-all",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "logout-all"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🔗 OAuth2 (Yandex & VK)",
+      "item": [
+        {
+          "name": "Yandex OAuth - Initiate",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/oauth/yandex",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "oauth", "yandex"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "VK OAuth - Initiate",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/oauth/vk",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "oauth", "vk"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "👥 Users CRUD (MongoDB Collection)",
+      "item": [
+        {
+          "name": "Get User by ID (From MongoDB)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/{{user_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "users", "{{user_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get User by Email (MongoDB Indexed Query)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/email/{{user_email}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "users", "email", "{{user_email}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Users (MongoDB Pagination)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/users?page=1&limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "users"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update User (MongoDB $set Update)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"updated_{{timestamp}}@example.com\",\n  \"phone\": \"+79998887766\",\n  \"password\": \"NewSecurePass456\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/{{user_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "users", "{{user_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Patch User (Partial MongoDB Update)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"+79991112233\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/{{user_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "users", "{{user_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Soft Delete User (Sets deleted_at field)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/{{user_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "users", "{{user_id}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "📝 Posts CRUD (MongoDB Collection with Redis Cache)",
+      "item": [
+        {
+          "name": "1️⃣ Create Post (MongoDB Insert + Cache Invalidation)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.data && response.data.id) {",
+                  "        pm.environment.set('post_id', response.data.id);",
+                  "        console.log('✅ Post created with ID:', response.data.id);",
+                  "        console.log('📝 MongoDB Post ObjectId:', response.data.id);",
+                  "        console.log('🔄 Cache for post lists invalidated');",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": \"{{user_id}}\",\n  \"title\": \"Мой первый пост в MongoDB\",\n  \"description\": \"PostgreSQL → MongoDB migration complete! 🎉\",\n  \"image_url\": \"https://images.unsplash.com/photo-1516245834210-c4c142785335\",\n  \"status\": \"active\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/posts",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "posts"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "2️⃣ Get All Posts (First Request - Cache MISS, from MongoDB)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "console.log(`Response time: ${pm.response.responseTime}ms`);",
+                  "if (pm.response.responseTime > 50) {",
+                  "    console.log('📡 Cache MISS - Data loaded from MongoDB');",
+                  "} else {",
+                  "    console.log('⚡ Cache HIT - Data from Redis');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/posts?page=1&limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "posts"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "3️⃣ Get All Posts (Second Request - Should be Cache HIT from Redis)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const responseTime = pm.response.responseTime;",
+                  "console.log(`⚡ RESPONSE TIME: ${responseTime}ms`);",
+                  "",
+                  "if (responseTime < 30) {",
+                  "    console.log('✅ FAST RESPONSE - Data served from Redis Cache!');",
+                  "} else {",
+                  "    console.log('⚠️ Response from MongoDB (Cache MISS)');",
+                  "}",
+                  "",
+                  "pm.test('Response time should be fast (cached)', function() {",
+                  "    pm.expect(responseTime).to.be.below(50);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/posts?page=1&limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "posts"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "4️⃣ Get Post by ID (From MongoDB by ObjectId)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/posts/{{post_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "posts", "{{post_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "5️⃣ Update Post (MongoDB $set + Cache Invalidation)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Обновленный пост в MongoDB\",\n  \"description\": \"Данные теперь хранятся в документоориентированной БД\",\n  \"image_url\": \"https://example.com/mongodb-photo.jpg\",\n  \"status\": \"active\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/posts/{{post_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "posts", "{{post_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "6️⃣ Patch Post (Partial MongoDB Update)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"draft\",\n  \"title\": \"Черновик в MongoDB\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/posts/{{post_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "posts", "{{post_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "7️⃣ Soft Delete Post (Sets deleted_at field)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/posts/{{post_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "posts", "{{post_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "8️⃣ Get User Posts (MongoDB Query with Index)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/posts/user/{{user_id}}?page=1&limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "posts", "user", "{{user_id}}"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "⚡ Redis Cache Testing (MongoDB + Redis)",
+      "item": [
+        {
+          "name": "Test Different Pagination (Different Cache Keys)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/posts?page=2&limit=5",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "posts"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "2"
+                },
+                {
+                  "key": "limit",
+                  "value": "5"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Test Cache Invalidation (Create Post then Get List)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "console.log('🔄 Creating new post will invalidate cache...');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/posts?page=1&limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "posts"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Performance Comparison - Run Multiple Times",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const responseTime = pm.response.responseTime;",
+                  "console.log(`📊 Request completed in ${responseTime}ms`);",
+                  "",
+                  "if (!pm.collectionVariables.get('avgTime')) {",
+                  "    pm.collectionVariables.set('avgTime', responseTime);",
+                  "    pm.collectionVariables.set('count', 1);",
+                  "} else {",
+                  "    const avg = (pm.collectionVariables.get('avgTime') * pm.collectionVariables.get('count') + responseTime) / (pm.collectionVariables.get('count') + 1);",
+                  "    pm.collectionVariables.set('avgTime', avg);",
+                  "    pm.collectionVariables.set('count', pm.collectionVariables.get('count') + 1);",
+                  "    console.log(`📈 Average response time: ${Math.round(avg)}ms`);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/posts?page=1&limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "posts"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🗄️ MongoDB Admin & Monitoring",
+      "item": [
+        {
+          "name": "Open Mongo Express (Web Admin UI)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{mongo_express_url}}",
+              "host": ["{{mongo_express_url}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "MongoDB Shell Commands Reference",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "https://www.mongodb.com/docs/manual/reference/mongo-shell/",
+              "host": ["https:", "www.mongodb.com"],
+              "path": ["docs", "manual", "reference", "mongo-shell"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:4200",
+      "type": "string"
+    },
+    {
+      "key": "mongo_express_url",
+      "value": "http://localhost:8081",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Get cookies from response and store them",
+          "const cookieJar = pm.cookies;",
+          "const accessToken = cookieJar.get('access_token');",
+          "const refreshToken = cookieJar.get('refresh_token');",
+          "",
+          "if (accessToken) {",
+          "    pm.environment.set('access_token', accessToken);",
+          "    console.log('🎫 Access token loaded');",
+          "}",
+          "",
+          "if (refreshToken) {",
+          "    pm.environment.set('refresh_token', refreshToken);",
+          "}",
+          "",
+          "console.log('🚀 Running against MongoDB backend');"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Test for cache performance",
+          "if (pm.response.code === 200) {",
+          "    const responseTime = pm.response.responseTime;",
+          "    console.log(`⏱️ Response time: ${responseTime}ms`);",
+          "    ",
+          "    // MongoDB ObjectId validation",
+          "    const response = pm.response.json();",
+          "    if (response && response.data && response.data.id) {",
+          "        const id = response.data.id;",
+          "        if (id && id.match(/^[0-9a-fA-F]{24}$/)) {",
+          "            console.log('✅ Valid MongoDB ObjectId:', id);",
+          "        }",
+          "    }",
+          "}"
+        ]
+      }
+    }
+  ]
 }

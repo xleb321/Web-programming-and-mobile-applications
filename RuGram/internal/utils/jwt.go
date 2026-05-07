@@ -10,9 +10,9 @@ import (
 )
 
 type JWTClaims struct {
-	Sub   string `json:"sub"`
-	Type  string `json:"type"`
-	JTI   string `json:"jti"` // JWT ID для идентификации токена
+	Sub  string `json:"sub"`
+	Type string `json:"type"`
+	JTI  string `json:"jti"`
 	jwt.RegisteredClaims
 }
 
@@ -41,6 +41,8 @@ func CreateAccessToken(userID string) (string, string, error) {
 	if err != nil {
 		return "", "", err
 	}
+
+	fmt.Printf("Created access token for user: %s, JTI: %s\n", userID, jti)
 	return tokenString, jti, nil
 }
 
@@ -69,6 +71,8 @@ func CreateRefreshToken(userID string) (string, string, error) {
 	if err != nil {
 		return "", "", err
 	}
+
+	fmt.Printf("Created refresh token for user: %s, JTI: %s\n", userID, jti)
 	return tokenString, jti, nil
 }
 

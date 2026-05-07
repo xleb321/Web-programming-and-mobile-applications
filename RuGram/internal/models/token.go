@@ -1,21 +1,22 @@
 package models
 
 import (
-    "time"
-    "github.com/google/uuid"
+	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type UserToken struct {
-    ID         uuid.UUID `json:"id" db:"id"`
-    UserID     uuid.UUID `json:"user_id" db:"user_id"`
-    TokenHash  string    `json:"-" db:"token_hash"`
-    TokenSalt  string    `json:"-" db:"token_salt"`
-    TokenType  string    `json:"token_type" db:"token_type"` // access or refresh
-    ExpiresAt  time.Time `json:"expires_at" db:"expires_at"`
-    Revoked    bool      `json:"revoked" db:"revoked"`
-    CreatedAt  time.Time `json:"created_at" db:"created_at"`
+	ID        primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	UserID    primitive.ObjectID `json:"user_id" bson:"user_id"`
+	TokenHash string             `json:"-" bson:"token_hash"`
+	TokenSalt string             `json:"-" bson:"token_salt"`
+	TokenType string             `json:"token_type" bson:"token_type"` // access or refresh
+	ExpiresAt time.Time          `json:"expires_at" bson:"expires_at"`
+	Revoked   bool               `json:"revoked" bson:"revoked"`
+	CreatedAt time.Time          `json:"created_at" bson:"created_at"`
 }
 
-func (UserToken) TableName() string {
-    return "user_tokens"
+func (UserToken) CollectionName() string {
+	return "user_tokens"
 }
