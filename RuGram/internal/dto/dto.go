@@ -17,8 +17,16 @@ type LoginRequest struct {
 }
 
 type LoginResponse struct {
-    Message string       `json:"message"`
+    Message string      `json:"message"`
     User    UserResponse `json:"user"`
+}
+
+type UserResponse struct {
+    ID        string     `json:"id"`
+    Email     string     `json:"email"`
+    Phone     *string    `json:"phone,omitempty"`
+    CreatedAt time.Time  `json:"created_at"`
+    UpdatedAt time.Time  `json:"updated_at"`
 }
 
 type WhoamiResponse struct {
@@ -33,16 +41,16 @@ type OAuthRedirectResponse struct {
 }
 
 type YandexUserInfo struct {
-    ID           string   `json:"id"`
-    Login        string   `json:"login"`
-    ClientID     string   `json:"client_id"`
-    DisplayName  string   `json:"display_name"`
-    RealName     string   `json:"real_name"`
-    FirstName    string   `json:"first_name"`
-    LastName     string   `json:"last_name"`
-    Sex          string   `json:"sex"`
-    DefaultEmail string   `json:"default_email"`
-    Emails       []string `json:"emails"`
+    ID            string `json:"id"`
+    Login         string `json:"login"`
+    ClientID      string `json:"client_id"`
+    DisplayName   string `json:"display_name"`
+    RealName      string `json:"real_name"`
+    FirstName     string `json:"first_name"`
+    LastName      string `json:"last_name"`
+    Sex           string `json:"sex"`
+    DefaultEmail  string `json:"default_email"`
+    Emails        []string `json:"emails"`
 }
 
 type YandexTokenResponse struct {
@@ -76,6 +84,15 @@ type SuccessResponse struct {
     Data    interface{} `json:"data,omitempty"`
 }
 
+// Добавить в существующий файл dto.go:
+
+// UpdateUserRequest DTO
+type UpdateUserRequest struct {
+    Email    *string `json:"email,omitempty"`
+    Phone    *string `json:"phone,omitempty"`
+    Password *string `json:"password,omitempty"`
+}
+
 // PaginationResponse DTO
 type PaginationResponse struct {
     Data interface{} `json:"data"`
@@ -87,17 +104,4 @@ type MetaData struct {
     Page       int   `json:"page"`
     Limit      int   `json:"limit"`
     TotalPages int64 `json:"totalPages"`
-}
-
-// UserResponse - расширенный
-type UserResponse struct {
-    ID           string     `json:"id"`
-    Email        string     `json:"email"`
-    Phone        *string    `json:"phone,omitempty"`
-    DisplayName  *string    `json:"display_name,omitempty"`
-    Bio          *string    `json:"bio,omitempty"`
-    AvatarURL    *string    `json:"avatar_url,omitempty"`
-    AvatarFileID *string    `json:"avatar_file_id,omitempty"`
-    CreatedAt    time.Time  `json:"created_at"`
-    UpdatedAt    time.Time  `json:"updated_at"`
 }

@@ -69,49 +69,6 @@ services:
     networks:
       - rugram_network
 
-  minio:
-    image: minio/minio:latest
-    container_name: rugram_minio
-    restart: unless-stopped
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minio_admin}
-      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minio_secure_password}
-    ports:
-      - '9000:9000'
-      - '9001:9001'
-    volumes:
-      - rugram_minio_data:/data
-    networks:
-      - rugram_network
-    command: server /data --console-address ":9001"
-    healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-
-  rabbitmq:
-    image: rabbitmq:3.12-management-alpine
-    container_name: rugram_rabbitmq
-    restart: unless-stopped
-    environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-rugram_user}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-rugram_password}
-    ports:
-      - '5672:5672'
-      - '15672:15672'
-    volumes:
-      - rugram_rabbitmq_data:/var/lib/rabbitmq
-    networks:
-      - rugram_network
-    healthcheck:
-      test: ['CMD', 'rabbitmq-diagnostics', '-q', 'ping']
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-
   app:
     build: .
     container_name: rugram_api
@@ -133,22 +90,6 @@ services:
       VK_CLIENT_ID: ${VK_CLIENT_ID:-}
       VK_CLIENT_SECRET: ${VK_CLIENT_SECRET:-}
       VK_REDIRECT_URI: ${VK_REDIRECT_URI:-}
-      MINIO_ENDPOINT: ${MINIO_ENDPOINT:-minio:9000}
-      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minio_admin}
-      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minio_secure_password}
-      MINIO_BUCKET: ${MINIO_BUCKET:-rugram-files}
-      MINIO_USE_SSL: ${MINIO_USE_SSL:-false}
-      MAX_FILE_SIZE: ${MAX_FILE_SIZE:-10485760}
-      RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
-      RABBITMQ_PORT: ${RABBITMQ_PORT:-5672}
-      RABBITMQ_USER: ${RABBITMQ_USER:-rugram_user}
-      RABBITMQ_PASS: ${RABBITMQ_PASS:-rugram_password}
-      SMTP_HOST: ${SMTP_HOST:-}
-      SMTP_PORT: ${SMTP_PORT:-465}
-      SMTP_USER: ${SMTP_USER:-}
-      SMTP_PASS: ${SMTP_PASS:-}
-      SMTP_FROM: ${SMTP_FROM:-}
-      SMTP_SECURE: ${SMTP_SECURE:-true}
     ports:
       - '${APP_PORT:-4200}:${APP_PORT:-4200}'
     depends_on:
@@ -156,10 +97,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      minio:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
+      mongo-express:
+        condition: service_started
     networks:
       - rugram_network
 
@@ -167,8 +106,6 @@ volumes:
   rugram_mongo_data:
   rugram_redis_data:
   rugram_redisinsight_data:
-  rugram_minio_data:
-  rugram_rabbitmq_data:
 
 networks:
   rugram_network:
