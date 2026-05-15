@@ -4,19 +4,15 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// StandardResponse represents standard API response
-// @Description Стандартный ответ API
 type StandardResponse struct {
-	Success bool        `json:"success" example:"true"`
-	Message string      `json:"message,omitempty" example:"Operation successful"`
+	Success bool        `json:"success"`
+	Message string      `json:"message,omitempty"`
 	Data    interface{} `json:"data,omitempty"`
 }
 
-// ErrorResponseStruct represents error response
-// @Description Ответ с ошибкой
 type ErrorResponseStruct struct {
-	Success bool   `json:"success" example:"false"`
-	Error   string `json:"error" example:"Invalid request data"`
+	Success bool   `json:"success"`
+	Error   string `json:"error"`
 }
 
 func SuccessResponse(c *gin.Context, statusCode int, data interface{}) {

@@ -1,108 +1,107 @@
 package dto
 
 import (
-	"time"
+    "time"
 )
 
 // Auth DTOs
 type RegisterRequest struct {
-	Email    string `json:"email" binding:"required,email" example:"user@example.com"`
-	Password string `json:"password" binding:"required,min=6" example:"SecurePass123"`
-	Phone    string `json:"phone,omitempty" example:"+79991234567"`
+    Email    string `json:"email" binding:"required,email"`
+    Password string `json:"password" binding:"required,min=6"`
+    Phone    string `json:"phone,omitempty"`
 }
 
 type LoginRequest struct {
-	Email    string `json:"email" binding:"required,email" example:"user@example.com"`
-	Password string `json:"password" binding:"required" example:"SecurePass123"`
+    Email    string `json:"email" binding:"required,email"`
+    Password string `json:"password" binding:"required"`
 }
 
 type LoginResponse struct {
-	Message string       `json:"message" example:"login successful"`
-	User    UserResponse `json:"user"`
+    Message string      `json:"message"`
+    User    UserResponse `json:"user"`
 }
 
 type UserResponse struct {
-	ID        string    `json:"id" example:"507f1f77bcf86cd799439011"`
-	Email     string    `json:"email" example:"user@example.com"`
-	Phone     *string   `json:"phone,omitempty" example:"+79991234567"`
-	CreatedAt time.Time `json:"created_at" example:"2024-01-01T12:00:00Z"`
-	UpdatedAt time.Time `json:"updated_at" example:"2024-01-01T12:00:00Z"`
+    ID        string     `json:"id"`
+    Email     string     `json:"email"`
+    Phone     *string    `json:"phone,omitempty"`
+    CreatedAt time.Time  `json:"created_at"`
+    UpdatedAt time.Time  `json:"updated_at"`
 }
 
 type WhoamiResponse struct {
-	ID    string  `json:"id" example:"507f1f77bcf86cd799439011"`
-	Email string  `json:"email" example:"user@example.com"`
-	Phone *string `json:"phone,omitempty" example:"+79991234567"`
+    ID    string  `json:"id"`
+    Email string  `json:"email"`
+    Phone *string `json:"phone,omitempty"`
 }
 
 // OAuth DTOs
 type OAuthRedirectResponse struct {
-	URL string `json:"url" example:"https://oauth.yandex.ru/authorize?..."`
-}
-
-// Yandex OAuth DTOs
-type YandexTokenResponse struct {
-	AccessToken  string `json:"access_token"`
-	TokenType    string `json:"token_type"`
-	ExpiresIn    int    `json:"expires_in"`
-	RefreshToken string `json:"refresh_token"`
+    URL string `json:"url"`
 }
 
 type YandexUserInfo struct {
-	ID           string   `json:"id"`
-	Login        string   `json:"login"`
-	ClientID     string   `json:"client_id"`
-	DisplayName  string   `json:"display_name"`
-	RealName     string   `json:"real_name"`
-	FirstName    string   `json:"first_name"`
-	LastName     string   `json:"last_name"`
-	Sex          string   `json:"sex"`
-	DefaultEmail string   `json:"default_email"`
-	Emails       []string `json:"emails"`
+    ID            string `json:"id"`
+    Login         string `json:"login"`
+    ClientID      string `json:"client_id"`
+    DisplayName   string `json:"display_name"`
+    RealName      string `json:"real_name"`
+    FirstName     string `json:"first_name"`
+    LastName      string `json:"last_name"`
+    Sex           string `json:"sex"`
+    DefaultEmail  string `json:"default_email"`
+    Emails        []string `json:"emails"`
 }
 
-// VK OAuth DTOs
-type VKTokenResponse struct {
-	AccessToken string `json:"access_token"`
-	ExpiresIn   int    `json:"expires_in"`
-	UserID      int    `json:"user_id"`
-	Email       string `json:"email"`
+type YandexTokenResponse struct {
+    AccessToken  string `json:"access_token"`
+    TokenType    string `json:"token_type"`
+    ExpiresIn    int    `json:"expires_in"`
+    RefreshToken string `json:"refresh_token"`
 }
 
 type VKUserInfo struct {
-	ID        int    `json:"id"`
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
-	Email     string `json:"email"`
+    ID        int    `json:"id"`
+    FirstName string `json:"first_name"`
+    LastName  string `json:"last_name"`
+    Email     string `json:"email"`
 }
 
-// User update DTO
-type UpdateUserRequest struct {
-	Email    *string `json:"email,omitempty" example:"newemail@example.com"`
-	Phone    *string `json:"phone,omitempty" example:"+79998887766"`
-	Password *string `json:"password,omitempty" example:"NewSecurePass456"`
+type VKTokenResponse struct {
+    AccessToken string `json:"access_token"`
+    ExpiresIn   int    `json:"expires_in"`
+    UserID      int    `json:"user_id"`
+    Email       string `json:"email"`
 }
 
-// Pagination DTOs
-type PaginationResponse struct {
-	Data interface{} `json:"data"`
-	Meta MetaData    `json:"meta"`
-}
-
-type MetaData struct {
-	Total      int64 `json:"total" example:"100"`
-	Page       int   `json:"page" example:"1"`
-	Limit      int   `json:"limit" example:"10"`
-	TotalPages int64 `json:"totalPages" example:"10"`
-}
-
-// Error and Success responses
 type ErrorResponse struct {
-	Error string `json:"error" example:"Invalid request data"`
+    Error string `json:"error"`
 }
 
 type SuccessResponse struct {
-	Success bool        `json:"success" example:"true"`
-	Message string      `json:"message,omitempty"`
-	Data    interface{} `json:"data,omitempty"`
+    Success bool        `json:"success"`
+    Message string      `json:"message,omitempty"`
+    Data    interface{} `json:"data,omitempty"`
+}
+
+// Добавить в существующий файл dto.go:
+
+// UpdateUserRequest DTO
+type UpdateUserRequest struct {
+    Email    *string `json:"email,omitempty"`
+    Phone    *string `json:"phone,omitempty"`
+    Password *string `json:"password,omitempty"`
+}
+
+// PaginationResponse DTO
+type PaginationResponse struct {
+    Data interface{} `json:"data"`
+    Meta MetaData    `json:"meta"`
+}
+
+type MetaData struct {
+    Total      int64 `json:"total"`
+    Page       int   `json:"page"`
+    Limit      int   `json:"limit"`
+    TotalPages int64 `json:"totalPages"`
 }
