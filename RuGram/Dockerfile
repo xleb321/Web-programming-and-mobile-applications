@@ -32,4 +32,4 @@ COPY --from=builder /app/docs ./docs
 
 EXPOSE 4200
 
-CMD ["./main"]
+CMD ["./main"]123
