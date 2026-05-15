@@ -13,7 +13,52 @@ import (
 	"rugram-api/pkg/utils"
 
 	"github.com/gin-gonic/gin"
+
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
+
+	_ "rugram-api/docs"
 )
+
+// @title           RuGram API
+// @version         1.0.0
+// @description     Документация API для RuGram - социальной сети для обмена постами
+// @description     Поддерживает JWT аутентификацию, OAuth2 (Яндекс, ВКонтакте), Redis кеширование и MongoDB
+// @termsOfService  http://swagger.io/terms/
+
+// @contact.name   Gleb, Pavel
+// @contact.email  support@rugram.com
+
+// @license.name   MIT
+// @license.url    https://opensource.org/licenses/MIT
+
+// @host           localhost:4200
+// @BasePath       /api/v1
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Введите токен в формате "Bearer <token>"
+
+// @securityDefinitions.apikey CookieAuth
+// @in cookie
+// @name access_token
+// @description JWT токен доступа, хранящийся в HttpOnly cookie
+
+// @tag.name Health
+// @tag.description Проверка работоспособности API
+
+// @tag.name Auth
+// @tag.description Аутентификация и управление сессиями
+
+// @tag.name Users
+// @tag.description Управление пользователями (CRUD)
+
+// @tag.name Posts
+// @tag.description Управление постами (CRUD)
+
+// @tag.name OAuth
+// @tag.description OAuth2 аутентификация через Яндекс и ВКонтакте
 
 func main() {
 	// Load configuration
@@ -58,6 +103,12 @@ func main() {
 
 	// Setup Gin router
 	router := gin.Default()
+
+	// Swagger documentation (only in development)
+	if cfg.AppEnv != "production" {
+		router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+		log.Println("Swagger documentation available at http://localhost:" + cfg.AppPort + "/swagger/index.html")
+	}
 
 	// Routes
 	api := router.Group("/api/v1")

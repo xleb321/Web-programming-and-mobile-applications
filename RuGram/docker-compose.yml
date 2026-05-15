@@ -39,11 +39,6 @@ services:
       - rugram_network
     depends_on:
       - mongo
-    healthcheck:
-      test: ['CMD', 'wget', '--spider', 'http://localhost:8081']
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
   redis:
     image: redis:7-alpine
@@ -64,7 +59,9 @@ services:
       start_period: 10s
 
   app:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: rugram_api
     restart: unless-stopped
     environment:
@@ -91,8 +88,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      mongo-express:
-        condition: service_started
     networks:
       - rugram_network
 
