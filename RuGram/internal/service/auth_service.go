@@ -1,35 +1,36 @@
 package service
 
 import (
-    "errors"
-    "fmt"
-    "time"
+	"errors"
+	"fmt"
+	"time"
 
-    "rugram-api/internal/cache"
-    "rugram-api/internal/dto"
-    "rugram-api/internal/models"
-    "rugram-api/internal/repository"
-    "rugram-api/internal/utils"          // <-- убедитесь, что путь верный (у вас может быть "rugram-api/pkg/utils")
+	"rugram-api/internal/cache"
+	"rugram-api/internal/dto"
+	"rugram-api/internal/models"
+	"rugram-api/internal/repository"
+	"rugram-api/internal/utils"
 
-    "go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type AuthService struct {
-    userRepo  *repository.UserRepository
-    tokenRepo *repository.TokenRepository
-    cacheSvc  *cache.CacheService
+    userRepo    *repository.UserRepository
+    tokenRepo   *repository.TokenRepository
+    cacheSvc    *cache.CacheService
+    rabbitMQSvc *RabbitMQService
 }
 
-func NewAuthService(userRepo *repository.UserRepository, tokenRepo *repository.TokenRepository, cacheSvc *cache.CacheService) *AuthService {
+func NewAuthService(userRepo *repository.UserRepository, tokenRepo *repository.TokenRepository, cacheSvc *cache.CacheService, rabbitMQSvc *RabbitMQService) *AuthService {
     return &AuthService{
-        userRepo:  userRepo,
-        tokenRepo: tokenRepo,
-        cacheSvc:  cacheSvc,
+        userRepo:    userRepo,
+        tokenRepo:   tokenRepo,
+        cacheSvc:    cacheSvc,
+        rabbitMQSvc: rabbitMQSvc,
     }
 }
 
 func (s *AuthService) Register(req *dto.RegisterRequest) (*dto.UserResponse, error) {
-    // Нормализуем email перед валидацией и сохранением
     req.Email = utils.NormalizeEmail(req.Email)
 
     if err := utils.ValidateEmail(req.Email); err != nil {
@@ -63,7 +64,7 @@ func (s *AuthService) Register(req *dto.RegisterRequest) (*dto.UserResponse, err
     }
 
     user := &models.User{
-        Email:        req.Email,    // уже в нижнем регистре
+        Email:        req.Email,
         Phone:        phone,
         PasswordHash: passwordHash,
         PasswordSalt: passwordSalt,
@@ -71,6 +72,17 @@ func (s *AuthService) Register(req *dto.RegisterRequest) (*dto.UserResponse, err
 
     if err := s.userRepo.Create(user); err != nil {
         return nil, fmt.Errorf("failed to create user: %w", err)
+    }
+
+    // Publish user.registered event to RabbitMQ for async email sending
+    displayName := user.Email
+    if user.DisplayName != nil {
+        displayName = *user.DisplayName
+    }
+    if s.rabbitMQSvc != nil && s.rabbitMQSvc.IsConnected() {
+        if err := s.rabbitMQSvc.PublishUserRegisteredEvent(user.GetID(), user.Email, displayName); err != nil {
+            fmt.Printf("Warning: failed to publish user.registered event: %v\n", err)
+        }
     }
 
     return &dto.UserResponse{
@@ -83,7 +95,6 @@ func (s *AuthService) Register(req *dto.RegisterRequest) (*dto.UserResponse, err
 }
 
 func (s *AuthService) Login(email, password string) (*models.User, string, string, error) {
-    // Нормализуем email перед поиском
     email = utils.NormalizeEmail(email)
 
     user, err := s.userRepo.FindByEmail(email)
@@ -98,9 +109,7 @@ func (s *AuthService) Login(email, password string) (*models.User, string, strin
         return nil, "", "", errors.New("invalid email or password")
     }
 
-    // --- Остальная часть Login остаётся без изменений ---
     userIDString := user.GetID()
-    fmt.Printf("User logged in with ID: %s (hex: %s)\n", user.ID.Hex(), userIDString)
 
     accessToken, accessJTI, err := utils.CreateAccessToken(userIDString)
     if err != nil {
@@ -118,10 +127,6 @@ func (s *AuthService) Login(email, password string) (*models.User, string, strin
     accessKey := s.cacheSvc.BuildKey("auth", "user", userIDString, "access", accessJTI)
     refreshKey := s.cacheSvc.BuildKey("auth", "user", userIDString, "refresh", refreshJTI)
 
-    fmt.Printf("Redis keys created:\n")
-    fmt.Printf("  Access: %s\n", accessKey)
-    fmt.Printf("  Refresh: %s\n", refreshKey)
-
     s.cacheSvc.SetString(accessKey, userIDString, time.Until(accessExpiration))
     s.cacheSvc.SetString(refreshKey, userIDString, time.Until(refreshExpiration))
 
@@ -132,24 +137,24 @@ func (s *AuthService) Login(email, password string) (*models.User, string, strin
     refreshTokenHash := utils.HashToken(refreshToken, refreshSalt)
 
     accessTokenRecord := &models.UserToken{
-        UserID:     user.ID,
-        TokenHash:  accessTokenHash,
-        TokenSalt:  accessSalt,
-        TokenType:  "access",
-        ExpiresAt:  accessExpiration,
-        Revoked:    false,
+        UserID:    user.ID,
+        TokenHash: accessTokenHash,
+        TokenSalt: accessSalt,
+        TokenType: "access",
+        ExpiresAt: accessExpiration,
+        Revoked:   false,
     }
     if err := s.tokenRepo.Create(accessTokenRecord); err != nil {
         return nil, "", "", fmt.Errorf("failed to save access token: %w", err)
     }
 
     refreshTokenRecord := &models.UserToken{
-        UserID:     user.ID,
-        TokenHash:  refreshTokenHash,
-        TokenSalt:  refreshSalt,
-        TokenType:  "refresh",
-        ExpiresAt:  refreshExpiration,
-        Revoked:    false,
+        UserID:    user.ID,
+        TokenHash: refreshTokenHash,
+        TokenSalt: refreshSalt,
+        TokenType: "refresh",
+        ExpiresAt: refreshExpiration,
+        Revoked:   false,
     }
     if err := s.tokenRepo.Create(refreshTokenRecord); err != nil {
         return nil, "", "", fmt.Errorf("failed to save refresh token: %w", err)
@@ -159,162 +164,148 @@ func (s *AuthService) Login(email, password string) (*models.User, string, strin
 }
 
 func (s *AuthService) GetUserFromAccessToken(accessToken string) (*models.User, error) {
-	claims, err := utils.DecodeAccessToken(accessToken)
-	if err != nil {
-		return nil, errors.New("invalid or expired access token")
-	}
+    claims, err := utils.DecodeAccessToken(accessToken)
+    if err != nil {
+        return nil, errors.New("invalid or expired access token")
+    }
 
-	if claims.Type != "access" {
-		return nil, errors.New("invalid token type")
-	}
+    if claims.Type != "access" {
+        return nil, errors.New("invalid token type")
+    }
 
-	fmt.Printf("Token claims - Sub: %s, JTI: %s\n", claims.Sub, claims.JTI)
+    accessKey := s.cacheSvc.BuildKey("auth", "user", claims.Sub, "access", claims.JTI)
 
-	// Проверяем наличие JTI в Redis
-	accessKey := s.cacheSvc.BuildKey("auth", "user", claims.Sub, "access", claims.JTI)
-	fmt.Printf("Checking Redis key: %s\n", accessKey)
+    exists, err := s.cacheSvc.Exists(accessKey)
+    if err != nil {
+        // If Redis is unavailable, skip check
+    } else if !exists {
+        return nil, errors.New("token has been revoked")
+    }
 
-	exists, err := s.cacheSvc.Exists(accessKey)
-	if err != nil {
-		fmt.Printf("Redis error: %v\n", err)
-		// Если Redis недоступен, пропускаем проверку
-	} else if !exists {
-		fmt.Printf("Token not found in Redis - revoked or expired\n")
-		return nil, errors.New("token has been revoked")
-	}
+    userID, err := primitive.ObjectIDFromHex(claims.Sub)
+    if err != nil {
+        return nil, errors.New("invalid user ID in token")
+    }
 
-	// Конвертируем строку в ObjectID
-	userID, err := primitive.ObjectIDFromHex(claims.Sub)
-	if err != nil {
-		fmt.Printf("Failed to parse ObjectID from hex: %s, error: %v\n", claims.Sub, err)
-		return nil, errors.New("invalid user ID in token")
-	}
+    user, err := s.userRepo.FindByID(userID)
+    if err != nil {
+        return nil, fmt.Errorf("failed to find user: %w", err)
+    }
+    if user == nil {
+        return nil, errors.New("user not found")
+    }
 
-	user, err := s.userRepo.FindByID(userID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to find user: %w", err)
-	}
-	if user == nil {
-		return nil, errors.New("user not found")
-	}
-
-	return user, nil
+    return user, nil
 }
 
 func (s *AuthService) RefreshTokens(refreshToken string) (*models.User, string, string, error) {
-	claims, err := utils.DecodeRefreshToken(refreshToken)
-	if err != nil {
-		return nil, "", "", errors.New("invalid or expired refresh token")
-	}
+    claims, err := utils.DecodeRefreshToken(refreshToken)
+    if err != nil {
+        return nil, "", "", errors.New("invalid or expired refresh token")
+    }
 
-	if claims.Type != "refresh" {
-		return nil, "", "", errors.New("invalid token type")
-	}
+    if claims.Type != "refresh" {
+        return nil, "", "", errors.New("invalid token type")
+    }
 
-	// Проверяем refresh token в Redis
-	refreshKey := s.cacheSvc.BuildKey("auth", "user", claims.Sub, "refresh", claims.JTI)
-	exists, _ := s.cacheSvc.Exists(refreshKey)
-	if !exists {
-		return nil, "", "", errors.New("refresh token has been revoked")
-	}
+    refreshKey := s.cacheSvc.BuildKey("auth", "user", claims.Sub, "refresh", claims.JTI)
+    exists, _ := s.cacheSvc.Exists(refreshKey)
+    if !exists {
+        return nil, "", "", errors.New("refresh token has been revoked")
+    }
 
-	userID, err := primitive.ObjectIDFromHex(claims.Sub)
-	if err != nil {
-		return nil, "", "", errors.New("invalid user ID in token")
-	}
+    userID, err := primitive.ObjectIDFromHex(claims.Sub)
+    if err != nil {
+        return nil, "", "", errors.New("invalid user ID in token")
+    }
 
-	user, err := s.userRepo.FindByID(userID)
-	if err != nil {
-		return nil, "", "", fmt.Errorf("failed to find user: %w", err)
-	}
-	if user == nil {
-		return nil, "", "", errors.New("user not found")
-	}
+    user, err := s.userRepo.FindByID(userID)
+    if err != nil {
+        return nil, "", "", fmt.Errorf("failed to find user: %w", err)
+    }
+    if user == nil {
+        return nil, "", "", errors.New("user not found")
+    }
 
-	// Удаляем старый refresh токен из Redis
-	s.cacheSvc.Del(refreshKey)
+    s.cacheSvc.Del(refreshKey)
 
-	// Удаляем все старые access токены пользователя из Redis
-	oldAccessPattern := s.cacheSvc.BuildKey("auth", "user", user.GetID(), "access", "*")
-	s.cacheSvc.DelByPattern(oldAccessPattern)
+    oldAccessPattern := s.cacheSvc.BuildKey("auth", "user", user.GetID(), "access", "*")
+    s.cacheSvc.DelByPattern(oldAccessPattern)
 
-	// Создаем новые токены
-	newAccessToken, newAccessJTI, err := utils.CreateAccessToken(user.GetID())
-	if err != nil {
-		return nil, "", "", fmt.Errorf("failed to create access token: %w", err)
-	}
+    newAccessToken, newAccessJTI, err := utils.CreateAccessToken(user.GetID())
+    if err != nil {
+        return nil, "", "", fmt.Errorf("failed to create access token: %w", err)
+    }
 
-	newRefreshToken, newRefreshJTI, err := utils.CreateRefreshToken(user.GetID())
-	if err != nil {
-		return nil, "", "", fmt.Errorf("failed to create refresh token: %w", err)
-	}
+    newRefreshToken, newRefreshJTI, err := utils.CreateRefreshToken(user.GetID())
+    if err != nil {
+        return nil, "", "", fmt.Errorf("failed to create refresh token: %w", err)
+    }
 
-	accessExpiration := time.Now().Add(15 * time.Minute)
-	refreshExpiration := time.Now().Add(7 * 24 * time.Hour)
+    accessExpiration := time.Now().Add(15 * time.Minute)
+    refreshExpiration := time.Now().Add(7 * 24 * time.Hour)
 
-	// Сохраняем новые JTI в Redis
-	accessKey := s.cacheSvc.BuildKey("auth", "user", user.GetID(), "access", newAccessJTI)
-	s.cacheSvc.SetString(accessKey, user.GetID(), time.Until(accessExpiration))
+    accessKey := s.cacheSvc.BuildKey("auth", "user", user.GetID(), "access", newAccessJTI)
+    s.cacheSvc.SetString(accessKey, user.GetID(), time.Until(accessExpiration))
 
-	newRefreshKey := s.cacheSvc.BuildKey("auth", "user", user.GetID(), "refresh", newRefreshJTI)
-	s.cacheSvc.SetString(newRefreshKey, user.GetID(), time.Until(refreshExpiration))
+    newRefreshKey := s.cacheSvc.BuildKey("auth", "user", user.GetID(), "refresh", newRefreshJTI)
+    s.cacheSvc.SetString(newRefreshKey, user.GetID(), time.Until(refreshExpiration))
 
-	// Сохраняем в БД
-	accessSalt, _ := utils.GenerateSalt()
-	refreshSalt, _ := utils.GenerateSalt()
+    accessSalt, _ := utils.GenerateSalt()
+    refreshSalt, _ := utils.GenerateSalt()
 
-	newAccessTokenHash := utils.HashToken(newAccessToken, accessSalt)
-	newRefreshTokenHash := utils.HashToken(newRefreshToken, refreshSalt)
+    newAccessTokenHash := utils.HashToken(newAccessToken, accessSalt)
+    newRefreshTokenHash := utils.HashToken(newRefreshToken, refreshSalt)
 
-	accessTokenRecord := &models.UserToken{
-		UserID:    user.ID,
-		TokenHash: newAccessTokenHash,
-		TokenSalt: accessSalt,
-		TokenType: "access",
-		ExpiresAt: accessExpiration,
-		Revoked:   false,
-	}
-	s.tokenRepo.Create(accessTokenRecord)
+    accessTokenRecord := &models.UserToken{
+        UserID:    user.ID,
+        TokenHash: newAccessTokenHash,
+        TokenSalt: accessSalt,
+        TokenType: "access",
+        ExpiresAt: accessExpiration,
+        Revoked:   false,
+    }
+    s.tokenRepo.Create(accessTokenRecord)
 
-	refreshTokenRecord := &models.UserToken{
-		UserID:    user.ID,
-		TokenHash: newRefreshTokenHash,
-		TokenSalt: refreshSalt,
-		TokenType: "refresh",
-		ExpiresAt: refreshExpiration,
-		Revoked:   false,
-	}
-	s.tokenRepo.Create(refreshTokenRecord)
+    refreshTokenRecord := &models.UserToken{
+        UserID:    user.ID,
+        TokenHash: newRefreshTokenHash,
+        TokenSalt: refreshSalt,
+        TokenType: "refresh",
+        ExpiresAt: refreshExpiration,
+        Revoked:   false,
+    }
+    s.tokenRepo.Create(refreshTokenRecord)
 
-	return user, newAccessToken, newRefreshToken, nil
+    return user, newAccessToken, newRefreshToken, nil
 }
 
 func (s *AuthService) Logout(accessToken string) error {
-	claims, err := utils.DecodeAccessToken(accessToken)
-	if err != nil {
-		return errors.New("invalid access token")
-	}
+    claims, err := utils.DecodeAccessToken(accessToken)
+    if err != nil {
+        return errors.New("invalid access token")
+    }
 
-	accessKey := s.cacheSvc.BuildKey("auth", "user", claims.Sub, "access", claims.JTI)
-	return s.cacheSvc.Del(accessKey)
+    accessKey := s.cacheSvc.BuildKey("auth", "user", claims.Sub, "access", claims.JTI)
+    return s.cacheSvc.Del(accessKey)
 }
 
 func (s *AuthService) LogoutAll(accessToken string) error {
-	claims, err := utils.DecodeAccessToken(accessToken)
-	if err != nil {
-		return errors.New("invalid access token")
-	}
+    claims, err := utils.DecodeAccessToken(accessToken)
+    if err != nil {
+        return errors.New("invalid access token")
+    }
 
-	accessPattern := s.cacheSvc.BuildKey("auth", "user", claims.Sub, "access", "*")
-	refreshPattern := s.cacheSvc.BuildKey("auth", "user", claims.Sub, "refresh", "*")
+    accessPattern := s.cacheSvc.BuildKey("auth", "user", claims.Sub, "access", "*")
+    refreshPattern := s.cacheSvc.BuildKey("auth", "user", claims.Sub, "refresh", "*")
 
-	s.cacheSvc.DelByPattern(accessPattern)
-	s.cacheSvc.DelByPattern(refreshPattern)
+    s.cacheSvc.DelByPattern(accessPattern)
+    s.cacheSvc.DelByPattern(refreshPattern)
 
-	userID, _ := primitive.ObjectIDFromHex(claims.Sub)
-	return s.tokenRepo.RevokeAllUserTokens(userID)
+    userID, _ := primitive.ObjectIDFromHex(claims.Sub)
+    return s.tokenRepo.RevokeAllUserTokens(userID)
 }
 
 func (s *AuthService) BuildKey(parts ...string) string {
-	return s.cacheSvc.BuildKey(parts...)
+    return s.cacheSvc.BuildKey(parts...)
 }
