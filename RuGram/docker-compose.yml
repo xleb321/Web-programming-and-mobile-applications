@@ -39,6 +39,11 @@ services:
       - rugram_network
     depends_on:
       - mongo
+    healthcheck:
+      test: ['CMD', 'wget', '--spider', 'http://localhost:8081']
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   redis:
     image: redis:7-alpine
@@ -57,17 +62,6 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
-
-  redisinsight:
-    image: redis/redisinsight:latest
-    container_name: rugram_redisinsight
-    restart: unless-stopped
-    ports:
-      - '5540:5540'
-    volumes:
-      - rugram_redisinsight_data:/data
-    networks:
-      - rugram_network
 
   app:
     build: .
@@ -105,7 +99,6 @@ services:
 volumes:
   rugram_mongo_data:
   rugram_redis_data:
-  rugram_redisinsight_data:
 
 networks:
   rugram_network:

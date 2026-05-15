@@ -31,7 +31,6 @@ func NewCacheService() (*CacheService, error) {
 	if host == "" {
 		host = "localhost"
 	}
-	
 	if port == "" {
 		port = "6379"
 	}
