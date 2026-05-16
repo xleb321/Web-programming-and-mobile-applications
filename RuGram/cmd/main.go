@@ -13,7 +13,31 @@ import (
 	"rugram-api/pkg/utils"
 
 	"github.com/gin-gonic/gin"
+
+	// Swagger docs
+	_ "rugram-api/docs"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
+
+// @title           RuGram API
+// @version         1.0
+// @description     API for RuGram social platform with MongoDB, JWT, OAuth, Redis.
+// @termsOfService  http://swagger.io/terms/
+
+// @contact.name   Gleb, Pavel
+// @contact.email  support@rugram.com
+
+// @license.name   MIT
+// @license.url    https://opensource.org/licenses/MIT
+
+// @host      localhost:4200
+// @BasePath  /api/v1
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Type "Bearer " followed by your access token.
 
 func main() {
 	// Load configuration
@@ -112,6 +136,9 @@ func main() {
 			"service": "rugram-api",
 		})
 	})
+
+	// Swagger UI
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// Start server
 	log.Printf("Server starting on port %s in %s mode", cfg.AppPort, cfg.AppEnv)
